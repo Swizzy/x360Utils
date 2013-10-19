@@ -22,12 +22,24 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release_PrintDebug|AnyCPU'">
+    <OutputPath>bin\Release_PrintDebug\</OutputPath>
+    <DefineConstants>TRACE;PRINTDEBUG</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <LangVersion>default</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -35,11 +47,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\BitOperations.cs" />
+    <Compile Include="Common\Translators.cs" />
+    <Compile Include="EventArg.cs" />
+    <Compile Include="Debug.cs" />
     <Compile Include="Common\StringUtils.cs" />
     <Compile Include="CPUKey\CpukeyUtils.cs" />
     <Compile Include="NAND\Bootloader.cs" />
     <Compile Include="NAND\Cryptography.cs" />
+    <Compile Include="NAND\Keyvault.cs" />
+    <Compile Include="NAND\NANDReader.cs" />
+    <Compile Include="NAND\NANDSpare.cs" />
     <Compile Include="NAND\SMC.cs" />
+    <Compile Include="NAND\SMCConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="x360UtilsException.cs" />
   </ItemGroup>

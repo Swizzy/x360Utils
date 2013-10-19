@@ -11,7 +11,11 @@
             KeyInvalidECD,
             KeyFileNoKeyFound,
             DataTooSmall,
-            DataTooBig
+            DataTooBig,
+            DataNotFound,
+            DataNotDecrypted,
+            BadChecksum,
+            DataInvalid
         }
 
         #endregion X360UtilsErrors enum

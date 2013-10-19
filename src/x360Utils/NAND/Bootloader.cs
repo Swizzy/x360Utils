@@ -19,7 +19,6 @@
 
         #endregion
 
-        private static readonly BitOperations BitOperations = new BitOperations();
         public readonly uint Build;
         public readonly BootLoaderTypes Type;
         public byte[] Data;

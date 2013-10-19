@@ -5,8 +5,22 @@
     using x360Utils.Common;
 
     public class CpukeyUtils {
-        private static readonly StringUtils StringUtils = new StringUtils();
-        private static readonly BitOperations BitOperations = new BitOperations();
+        private static Random _random = new Random((int) (DateTime.Now.Ticks & 0xFFFF));
+
+        public static void UpdateRandom(int seed) {
+            _random = new Random(seed);
+        }
+
+        public byte[] GenerateRandomCPUKey() {
+            var key = new byte[0x10];
+            do {
+                _random.NextBytes(key);
+                if (BitOperations.DataIsZero(ref key, 0, key.Length))
+                    UpdateRandom((int) (DateTime.Now.Ticks & 0xFFFF));
+            }
+            while(!VerifyCpuKey(ref key));
+            return key;
+        }
 
         private static void CalculateCPUKeyECD(ref byte[] key) {
             uint acc1 = 0, acc2 = 0;
@@ -29,29 +43,27 @@
             }
         }
 
-        public bool VerifyKey(string key) {
-            key = key.Trim();
-            var tmp = StringUtils.HexToArray(key);
-            return VerifyKey(ref tmp);
+        public bool VerifyCpuKey(string cpukey) {
+            cpukey = cpukey.Trim();
+            var tmp = StringUtils.HexToArray(cpukey);
+            return VerifyCpuKey(ref tmp);
         }
 
-        public bool VerifyKey(ref byte[] key) {
-            if (key == null)
-                throw new ArgumentNullException("key");
-            if (key.Length < 0x10)
+        public bool VerifyCpuKey(ref byte[] cpukey) {
+            if(cpukey.Length < 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
-            if (key.Length > 0x10)
+            if(cpukey.Length > 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooLong);
-            var tmp = BitConverter.ToUInt64(key, 0);
+            var tmp = BitConverter.ToUInt64(cpukey, 0);
             var hamming = BitOperations.CountSetBits(tmp);
-            tmp = BitOperations.Swap(BitConverter.ToUInt64(key, 8));
+            tmp = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8));
             hamming += BitOperations.CountSetBits(tmp & 0xFFFFFFFFFF030000);
             if(hamming != 53)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyInvalidHamming);
             var key2 = new byte[0x10];
-            Buffer.BlockCopy(key, 0, key2, 0, key.Length);
+            Buffer.BlockCopy(cpukey, 0, key2, 0, cpukey.Length);
             CalculateCPUKeyECD(ref key2);
-            if(!BitOperations.CompareByteArrays(key, key2))
+            if(!BitOperations.CompareByteArrays(cpukey, key2))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyInvalidECD);
             return true;
         }
@@ -65,7 +77,7 @@
                 if(string.IsNullOrEmpty(key) || !StringUtils.StringIsHex(key))
                     return false;
                 cpukey = key.Trim().ToUpper();
-                return true;
+                return VerifyCpuKey(cpukey);
             }
         }
 
@@ -92,7 +104,7 @@
             if(key1 == 0 || key2 == 0 || key3 == 0 || key4 == 0)
                 return false;
             cpukey = (key1 | key2).ToString("X16") + (key3 | key4).ToString("X16");
-            return true;
+            return VerifyCpuKey(cpukey);
         }
 
         public void GetCPUKeyFromTextFile(string file, out string cpukey) {

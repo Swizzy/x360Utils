@@ -3,7 +3,7 @@
     using System.Security.Cryptography;
     using x360Utils.Common;
 
-    internal class Cryptography {
+    internal sealed class Cryptography {
         #region BLEncryptionTypes enum
 
         public enum BLEncryptionTypes : ushort {
@@ -19,18 +19,7 @@
                                                           0xDD, 0x88, 0xAD, 0x0C, 0x9E, 0xD6, 0x69, 0xE7, 0xB5, 0x67, 0x94, 0xFB, 0x68, 0x56, 0x3E, 0xFA
                                                           };
 
-        private static readonly StringUtils StringUtils = new StringUtils();
-        private static readonly BitOperations BitOperations = new BitOperations();
-
         public static void Rc4(ref byte[] bytes, byte[] key) {
-            if(bytes == null)
-                throw new ArgumentNullException("bytes");
-            if(bytes.Length == 0)
-                throw new ArgumentOutOfRangeException("bytes");
-            if(key == null)
-                throw new ArgumentNullException("key");
-            if(key.Length == 0)
-                throw new ArgumentOutOfRangeException("key");
             var s = new byte[256];
             var k = new byte[256];
             byte temp;
@@ -60,19 +49,12 @@
 
         #region SMC
 
-        public bool VerifySMCDecrypted(ref byte[] data) {
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
+        public static bool VerifySMCDecrypted(ref byte[] data)
+        {
             return BitOperations.DataIsZero(ref data, data.Length - 4, 4);
         }
 
         public void DecryptSMC(ref byte[] data) {
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
             var key = new byte[] {
                                  0x42, 0x75, 0x4E, 0x79
                                  };
@@ -86,10 +68,6 @@
         }
 
         public void EncryptSMC(ref byte[] data) {
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
             var key = new byte[] {
                                  0x42, 0x75, 0x4e, 0x79
                                  };
@@ -116,10 +94,6 @@
         public void DecryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
             if(inkey == null) {
                 switch(type) {
                     case BLEncryptionTypes.Default:
@@ -173,10 +147,6 @@
         public void EncryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
             if(inkey == null) {
                 switch(type) {
                     case BLEncryptionTypes.Default:
@@ -222,10 +192,6 @@
         public void DecryptBootloaderCF(ref byte[] data, ref byte[] inkey, out byte[] outkey) {
             #region Error Handling
 
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
             if(inkey == null)
                 inkey = BLKey;
             if(inkey.Length != 0x10)
@@ -246,18 +212,10 @@
         }
 
         public bool VerifyCBDecrypted(ref byte[] data) {
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
             return BitOperations.DataIsZero(ref data, 0x270, 0x120);
         }
 
         public bool VerifyCFDecrypted(ref byte[] data) {
-            if(data == null)
-                throw new ArgumentNullException("data");
-            if(data.Length == 0)
-                throw new ArgumentOutOfRangeException("data");
             return BitOperations.DataIsZero(ref data, 0x1F0, 0x20);
         }
 
@@ -269,16 +227,22 @@
             DecryptKV(ref data, StringUtils.HexToArray(cpukey));
         }
 
-        public void DecryptKV(ref byte[] data, byte[] key) {
-            if(data.Length != 0x4000 || key.Length != 0x10)
-                return;
+        public void DecryptKV(ref byte[] data, byte[] cpukey) {
+            if (data.Length < 0x4000)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
+            if (data.Length > 0x4000)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooBig);
+            if (cpukey.Length < 0x10)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
+            if (cpukey.Length > 0x10)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooLong);
             var tmp = new byte[data.Length - 0x10];
             var header = new byte[0x10];
             Array.Copy(data, 0x0, header, 0x0, 0x10);
             Buffer.BlockCopy(data, 0x10, tmp, 0x0, tmp.Length);
-            key = new HMACSHA1(key).ComputeHash(header);
-            Array.Resize(ref key, 0x10);
-            Rc4(ref tmp, key);
+            cpukey = new HMACSHA1(cpukey).ComputeHash(header);
+            Array.Resize(ref cpukey, 0x10);
+            Rc4(ref tmp, cpukey);
             Array.Copy(header, data, header.Length);
             Buffer.BlockCopy(tmp, 0x0, data, header.Length, tmp.Length);
         }
@@ -288,14 +252,10 @@
         }
 
         public bool VerifyKVDecrypted(ref byte[] data, byte[] cpukey) {
-            if(data == null)
-                throw new ArgumentNullException("data");
             if(data.Length < 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             if(data.Length > 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooBig);
-            if(cpukey == null)
-                throw new ArgumentNullException("cpukey");
             if(cpukey.Length < 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
             if(cpukey.Length > 0x10)
