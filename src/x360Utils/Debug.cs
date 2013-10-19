@@ -1,15 +1,15 @@
-﻿#region
+﻿#if DEBUG
+#define PRINTDEBUG
+// Make sure we print debug messages on debug builds
+#endif
+
+#region
 
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 #endregion
-
-#if DEBUG
-#define PRINTDEBUG
-// Make sure we print debug messages on debug builds
-#endif
 
 namespace x360Utils {
     public static class Debug {
