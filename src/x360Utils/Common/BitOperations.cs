@@ -1,7 +1,8 @@
 ﻿namespace x360Utils.Common {
     public static class BitOperations {
         public static ulong Swap(ulong x) {
-            return x << 56 | x << 40 & 0xff000000000000 | x << 24 & 0xff0000000000 | x << 8 & 0xff00000000 | x >> 8 & 0xff000000 | x >> 24 & 0xff0000 | x >> 40 & 0xff00 | x >> 56;
+            return x << 56 | x << 40 & 0xff000000000000 | x << 24 & 0xff0000000000 | x << 8 & 0xff00000000 |
+                   x >> 8 & 0xff000000 | x >> 24 & 0xff0000 | x >> 40 & 0xff00 | x >> 56;
         }
 
         public static uint Swap(uint x) {
@@ -14,25 +15,24 @@
 
         public static uint CountSetBits(ulong n) {
             uint c;
-            for(c = 0; n > 0; c++)
+            for (c = 0; n > 0; c++)
                 n &= n - 1;
             return c;
         }
 
         public static bool CompareByteArrays(byte[] a1, byte[] a2) {
-            if(a1 == a2)
+            if (a1 == a2)
                 return true;
-            if(a1 == null || a2 == null || a1.Length != a2.Length)
+            if (a1 == null || a2 == null || a1.Length != a2.Length)
                 return false;
-            for(var index = 0; index < a1.Length; index++) {
-                if(a1[index] != a2[index])
+            for (var index = 0; index < a1.Length; index++) {
+                if (a1[index] != a2[index])
                     return false;
             }
             return true;
         }
 
-        public static bool DataIsZero(ref byte[] data, int offset, int length)
-        {
+        public static bool DataIsZero(ref byte[] data, int offset, int length) {
             for (var i = 0; i < length; i++)
                 if (data[offset + i] != 0x00)
                     return false;
@@ -41,14 +41,13 @@
 
         public static int CountByteInstances(ref byte[] data, byte instance) {
             var count = 0;
-            foreach(var b in data)
-                if(b == instance)
+            foreach (var b in data)
+                if (b == instance)
                     count++;
             return count;
         }
 
-        public static int CountByteInstances(ref byte[] data, byte instance, int offset, int length = 0)
-        {
+        public static int CountByteInstances(ref byte[] data, byte instance, int offset, int length = 0) {
             var count = 0;
             length = length <= 0 ? data.Length - offset : offset + length;
             for (; offset < length; offset++)

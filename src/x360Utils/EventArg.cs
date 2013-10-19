@@ -1,6 +1,10 @@
-﻿namespace x360Utils {
-    using System;
+﻿#region
 
+using System;
+
+#endregion
+
+namespace x360Utils {
     public sealed class EventArg<T> : EventArgs {
         private readonly T _data;
 

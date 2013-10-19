@@ -1,7 +1,11 @@
-﻿namespace x360Utils.NAND {
-    using System;
-    using x360Utils.Common;
+﻿#region
 
+using System;
+using x360Utils.Common;
+
+#endregion
+
+namespace x360Utils.NAND {
     public class Bootloader {
         #region BootLoaderTypes enum
 
@@ -33,19 +37,20 @@
         }
 
         private uint GetBootloaderVersion() {
-            if(Data.Length <= 4)
+            if (Data.Length <= 4)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             return BitOperations.Swap(BitConverter.ToUInt16(Data, 2));
         }
 
         public void Decrypt(byte[] decryptionkey = null) {
-            if(Decrypted)
+            if (Decrypted)
                 return;
             var crypto = new Cryptography();
-            switch(Type) {
+            switch (Type) {
                 case BootLoaderTypes.CB:
                 case BootLoaderTypes.CBA:
-                    crypto.DecryptBootloaderCB(ref Data, decryptionkey, null, Cryptography.BLEncryptionTypes.Default, out OutKey);
+                    crypto.DecryptBootloaderCB(ref Data, decryptionkey, null, Cryptography.BLEncryptionTypes.Default,
+                                               out OutKey);
                     Decrypted = crypto.VerifyCBDecrypted(ref Data);
                     break;
                 case BootLoaderTypes.CBB:
@@ -70,20 +75,22 @@
         }
 
         public void Encrypt(byte[] encryptionkey = null) {
-            if(!Decrypted)
+            if (!Decrypted)
                 return;
             var crypto = new Cryptography();
-            switch(Type) {
+            switch (Type) {
                 case BootLoaderTypes.CB:
                 case BootLoaderTypes.CBA:
-                    crypto.EncryptBootloaderCB(ref Data, encryptionkey, null, Cryptography.BLEncryptionTypes.Default, out Key);
+                    crypto.EncryptBootloaderCB(ref Data, encryptionkey, null, Cryptography.BLEncryptionTypes.Default,
+                                               out Key);
                     break;
                 case BootLoaderTypes.CBB:
                     var cryptotype = crypto.GetBootloaderCryptoType(ref Data);
                     crypto.DecryptBootloaderCB(ref Data, encryptionkey, Key, cryptotype, out OutKey);
                     break;
                 case BootLoaderTypes.CD:
-                    crypto.DecryptBootloaderCB(ref Data, encryptionkey, Key, Cryptography.BLEncryptionTypes.Default, out OutKey);
+                    crypto.DecryptBootloaderCB(ref Data, encryptionkey, Key, Cryptography.BLEncryptionTypes.Default,
+                                               out OutKey);
                     break;
                 case BootLoaderTypes.CE:
                 case BootLoaderTypes.CF0:
@@ -98,9 +105,9 @@
         }
 
         public void Zeropair(ref byte[] data) {
-            if(data == null)
+            if (data == null)
                 throw new ArgumentNullException("data");
-            if(data.Length <= 0x40)
+            if (data.Length <= 0x40)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             var tmp = new byte[0x20];
             Buffer.BlockCopy(tmp, 0x00, data, 0x20, 0x20);

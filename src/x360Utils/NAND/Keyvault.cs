@@ -1,9 +1,13 @@
-﻿namespace x360Utils.NAND {
-    using System;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using x360Utils.Common;
+﻿#region
 
+using System;
+using System.Text;
+using System.Text.RegularExpressions;
+using x360Utils.Common;
+
+#endregion
+
+namespace x360Utils.NAND {
     internal class Keyvault {
         #region DateFormats enum
 
@@ -41,7 +45,9 @@
         }
 
         public string GetGameRegion(ref byte[] keyvaultdata, bool includebytes = false) {
-            return Translators.TranslateGameRegion(string.Format("0x{0:X2}{1:X2}", keyvaultdata[0xC8], keyvaultdata[0xC9]), includebytes);
+            return
+                Translators.TranslateGameRegion(
+                    string.Format("0x{0:X2}{1:X2}", keyvaultdata[0xC8], keyvaultdata[0xC9]), includebytes);
         }
 
         public string GetDVDKey(ref byte[] keyvaultdata) {
@@ -54,10 +60,10 @@
 
         public string GetMfrDate(ref byte[] keyvaultdata, DateFormats format) {
             var ret = Encoding.ASCII.GetString(keyvaultdata, 0x9E4, 8);
-            if(!Regex.IsMatch(ret, "^[0-9]{2}-[0-9]{2}-[0-9]{2}$"))
+            if (!Regex.IsMatch(ret, "^[0-9]{2}-[0-9]{2}-[0-9]{2}$"))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataInvalid);
             var split = ret.Split('-');
-            switch(format) {
+            switch (format) {
                 case DateFormats.YYMMDD:
                     return string.Format("{0}-{1}-{2}", split[1], split[0], split[2]);
                 case DateFormats.DDMMYY:
