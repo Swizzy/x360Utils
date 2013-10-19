@@ -19,15 +19,20 @@ namespace x360Utils {
             DataNotFound,
             DataNotDecrypted,
             BadChecksum,
-            DataInvalid
+            DataInvalid,
+            DataDecryptionFailed,
+            DataEncryptionFailed
         }
 
         #endregion X360UtilsErrors enum
 
         public readonly X360UtilsErrors ErrorCode;
 
-        public X360UtilsException(X360UtilsErrors errorCode) {
+        public new readonly string Message;
+
+        public X360UtilsException(X360UtilsErrors errorCode, string message = "") {
             ErrorCode = errorCode;
+            Message = message;
         }
     }
 }
