@@ -6,7 +6,7 @@ using System.IO;
 #endregion
 
 namespace x360Utils.NAND {
-    internal class NANDReader : Stream {
+    public class NANDReader : Stream {
         public readonly bool HasSpare;
         private readonly BinaryReader _binaryReader;
 
