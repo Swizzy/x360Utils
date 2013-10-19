@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.IO;
 using x360Utils.Common;
 
 #endregion
@@ -25,6 +26,8 @@ namespace x360Utils.NAND {
 
         public readonly uint Build;
         public readonly BootLoaderTypes Type;
+        public readonly uint Offset;
+        public readonly uint Size;
         public byte[] Data;
         public bool Decrypted;
         public byte[] Key;
@@ -33,13 +36,56 @@ namespace x360Utils.NAND {
         public Bootloader(byte[] data, BootLoaderTypes type) {
             Type = type;
             Data = data;
-            Build = GetBootloaderVersion();
+            Size = (uint) data.Length;
+            Offset = 0;
+            Build = GetBootloaderVersion(ref data);
         }
 
-        private uint GetBootloaderVersion() {
-            if (Data.Length <= 4)
+        public Bootloader(NANDReader reader, int count = 0, bool readitin = false) {
+            Offset = (uint) reader.Position;
+            var header = reader.ReadBytes(0x10);
+            Type = GetTypeFromHeader(ref header, count);
+            Size = (uint) GetBootloaderSize(ref header);
+            Build = GetBootloaderVersion(ref header);
+            if (readitin) {
+                reader.Seek(Offset, SeekOrigin.Begin);
+                Data = reader.ReadBytes((int) Size);
+            }
+            else
+                reader.Seek(Offset + Size, SeekOrigin.Begin);
+        }
+
+        private int GetBootloaderSize(ref byte[] header) {
+            return (int)BitOperations.Swap(BitConverter.ToUInt32(header, 0xC)); 
+        }
+
+        public BootLoaderTypes GetTypeFromHeader(ref byte[] header, int count = 0) {
+            if (header[0] == 0x43)
+                switch (header[1]) {
+                    case 0x42:
+                        if (count == 0)
+                            return (BitOperations.Swap(BitConverter.ToUInt16(header, 6)) & 0x800) == 0x800 ? BootLoaderTypes.CBA : BootLoaderTypes.CB;
+                        return BootLoaderTypes.CBB;
+                    case 0x44:
+                        return BootLoaderTypes.CD;
+                    case 0x45:
+                        return BootLoaderTypes.CE;
+                    case 0x46:
+                        if (count == 0 || count == 5 || count == 6)
+                            return BootLoaderTypes.CF0;
+                        return BootLoaderTypes.CF1;
+                    case 0x47:
+                        if (count == 0 || count == 8 || count == 9)
+                            return BootLoaderTypes.CG0;
+                        return BootLoaderTypes.CG1;
+                }
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataInvalid);
+        }
+
+        private uint GetBootloaderVersion(ref byte[] header) {
+            if (header.Length <= 4)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
-            return BitOperations.Swap(BitConverter.ToUInt16(Data, 2));
+            return BitOperations.Swap(BitConverter.ToUInt16(header, 2));
         }
 
         public void Decrypt(byte[] decryptionkey = null) {

@@ -59,6 +59,7 @@
     <Compile Include="NAND\NANDSpare.cs" />
     <Compile Include="NAND\SMC.cs" />
     <Compile Include="NAND\SMCConfig.cs" />
+    <Compile Include="NAND\X360NAND.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="x360UtilsException.cs" />
   </ItemGroup>
