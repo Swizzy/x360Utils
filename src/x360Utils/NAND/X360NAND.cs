@@ -12,18 +12,18 @@
             for(var i = 0; reader.Position < reader.Length; i = 0) {
                 var tmp = reader.ReadBytes(0x4000);
                 while(i < tmp.Length) {
-                    if(tmp[i] == 0x66) {
-                        if(tmp.Length - i < 28) {
-                            var tmp2 = reader.ReadBytes(0x23);
-                            reader.Seek(-0x10, SeekOrigin.Current);
-                            Array.Resize(ref tmp, tmp.Length + tmp2.Length);
-                            Buffer.BlockCopy(tmp2, 0, tmp, tmp.Length - tmp2.Length, tmp2.Length);
-                        }
-                        if(tmp[i + 1] == 0x63 && tmp[i + 2] == 0x72 && tmp[i + 3] == 0x74 && tmp[i + 4] == 0x2E && tmp[i + 5] == 0x62 && tmp[i + 6] == 0x69 && tmp[i + 7] == 0x6E) {
-                            reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)), SeekOrigin.Begin);
-                            return reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
-                        }
+                    if(tmp[i] != 0x66)
+                        continue;
+                    if(tmp.Length - i < 0x1c) {
+                        var tmp2 = reader.ReadBytes(0x23);
+                        reader.Seek(tmp2.Length, SeekOrigin.Current);
+                        Array.Resize(ref tmp, tmp.Length + tmp2.Length);
+                        Buffer.BlockCopy(tmp2, 0, tmp, tmp.Length - tmp2.Length, tmp2.Length);
                     }
+                    if(tmp[i + 1] != 0x63 || tmp[i + 2] != 0x72 || tmp[i + 3] != 0x74 || tmp[i + 4] != 0x2E || tmp[i + 5] != 0x62 || tmp[i + 6] != 0x69 || tmp[i + 7] != 0x6E)
+                        continue;
+                    reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
+                    return reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
                 }
             }
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "FCRT");
@@ -201,6 +201,29 @@
                 }
             }
             return StringUtils.ArrayToHex(key);
+        }
+
+        public string GetLaunchIni(ref NANDReader reader) {
+            reader.Seek(0x8000, SeekOrigin.Begin);
+            for(var i = 0; reader.Position < reader.Length; i = 0) {
+                var tmp = reader.ReadBytes(0x4000);
+                while(i < tmp.Length) {
+                    if(tmp[i] != 0x6C)
+                        continue;
+                    if(tmp.Length - i < 0x1C) {
+                        var tmp2 = reader.ReadBytes(0x23);
+                        reader.Seek(tmp2.Length, SeekOrigin.Current);
+                        Array.Resize(ref tmp, tmp.Length + tmp2.Length);
+                        Buffer.BlockCopy(tmp2, 0, tmp, tmp.Length - tmp2.Length, tmp2.Length);
+                    }
+                    if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 || tmp[i + 8] != tmp[i + 3] || tmp[i + 9] != tmp[i + 7])
+                        continue;
+                    reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
+                    var data = reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
+                    return Encoding.ASCII.GetString(data);
+                }
+            }
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "Launch.ini");
         }
     }
 }
