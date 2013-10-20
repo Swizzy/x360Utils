@@ -66,7 +66,7 @@ namespace x360Utils.CPUKey {
             var key2 = new byte[0x10];
             Buffer.BlockCopy(cpukey, 0, key2, 0, cpukey.Length);
             CalculateCPUKeyECD(ref key2);
-            if (!BitOperations.CompareByteArrays(cpukey, key2))
+            if (!BitOperations.CompareByteArrays(ref cpukey, ref key2))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyInvalidECD);
             return true;
         }

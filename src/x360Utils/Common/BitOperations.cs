@@ -20,18 +20,6 @@
             return c;
         }
 
-        public static bool CompareByteArrays(byte[] a1, byte[] a2) {
-            if (a1 == a2)
-                return true;
-            if (a1 == null || a2 == null || a1.Length != a2.Length)
-                return false;
-            for (var index = 0; index < a1.Length; index++) {
-                if (a1[index] != a2[index])
-                    return false;
-            }
-            return true;
-        }
-
         public static bool DataIsZero(ref byte[] data, int offset, int length) {
             for (var i = 0; i < length; i++)
                 if (data[offset + i] != 0x00)
@@ -54,6 +42,31 @@
                 if (data[offset] == instance)
                     count++;
             return count;
+        }
+
+        public static bool CompareByteArrays(ref byte[] a1, ref byte[] a2, bool checkmax = true) {
+            if (a1 == a2)
+                return true;
+            if (a1 == null || a2 == null || (checkmax && a1.Length != a2.Length))
+                return false;
+            if(!checkmax) {
+                if(a1.Length < a2.Length) {
+                    for(var index = 0; index < a1.Length; index++)
+                        if(a1[index] != a2[index])
+                            return false;
+                }
+                else {
+                    for(var index = 0; index < a2.Length; index++)
+                        if(a1[index] != a2[index])
+                            return false;
+                }
+            }
+            else {
+                for(var index = 0; index < a1.Length; index++)
+                    if(a1[index] != a2[index])
+                        return false;
+            }
+            return true;
         }
     }
 }
