@@ -6,11 +6,11 @@ using System.IO;
 #endregion
 
 namespace x360Utils.NAND {
-    public class NANDReader : Stream {
+    public sealed class NANDReader : Stream {
         public readonly bool HasSpare;
         private readonly BinaryReader _binaryReader;
 
-        private NANDReader(string file) {
+        public NANDReader(string file) {
             _binaryReader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
             if (!VerifyMagic())
                 throw new Exception("Bad Magic");
@@ -24,7 +24,7 @@ namespace x360Utils.NAND {
         }
 
         public override bool CanSeek {
-            get { return true; }
+            get { return _binaryReader.BaseStream.CanSeek; }
         }
 
         public override bool CanWrite {
@@ -53,30 +53,32 @@ namespace x360Utils.NAND {
         }
 
         public override long Seek(long offset, SeekOrigin origin) {
-            return _binaryReader.BaseStream.Seek(HasSpare ? (offset / 0x200) * 0x210 : offset, origin);
+            offset = HasSpare ? ((offset / 0x200) * 0x210) + offset % 0x200 : offset;
+            Debug.SendDebug("Seeking to offset: 0x{0:X}", offset);
+            return _binaryReader.BaseStream.Seek(offset, origin);
         }
 
         public override void SetLength(long value) {
             throw new NotSupportedException();
         }
 
-        public override int Read(byte[] buffer, int offset, int count) {
+        public override int Read(byte[] buffer, int index, int count) {
             if (!HasSpare)
-                return _binaryReader.Read(buffer, offset, count);
+                return _binaryReader.Read(buffer, index, count);
             var pos = (int) _binaryReader.BaseStream.Position % 0x210;
             int size;
             if (pos != 0) {
                 size = (0x200 - pos);
                 if (size > count)
                     size = count;
-                pos = Read(buffer, offset, size);
+                pos = _binaryReader.Read(buffer, index, size);
                 if (size == count)
                     return pos;
             }
             while (pos < count) {
-                _binaryReader.BaseStream.Seek(0x10, SeekOrigin.Current);
+                _binaryReader.BaseStream.Seek(0x210, SeekOrigin.Current);
                 size = count - pos < 0x200 ? count - pos : 0x200;
-                pos += Read(buffer, pos + offset, size);
+                pos += _binaryReader.Read(buffer, pos + index, size);
             }
             return pos;
         }
@@ -86,19 +88,19 @@ namespace x360Utils.NAND {
                 return _binaryReader.ReadBytes(count);
             var buffer = new byte[count];
             var pos = (int) _binaryReader.BaseStream.Position % 0x210;
-            int size;
+            int size, index = 0;
             if (pos != 0) {
                 size = (0x200 - pos);
                 if (size > count)
                     size = count;
-                pos = Read(buffer, 0, size);
+                index += Read(buffer, index, size);
                 if (size == count)
                     return buffer;
             }
-            while (pos < count) {
-                _binaryReader.BaseStream.Seek(0x10, SeekOrigin.Current);
-                size = count - pos < 0x200 ? count - pos : 0x200;
-                pos += Read(buffer, pos, size);
+            while (index < count) {
+                _binaryReader.BaseStream.Seek(0x210, SeekOrigin.Current);
+                size = count - index < 0x200 ? count - index : 0x200;
+                index += Read(buffer, index, size);
             }
             return buffer;
         }
