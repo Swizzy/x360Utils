@@ -7,6 +7,8 @@
     using x360Utils.Common;
 
     public class X360NAND {
+        readonly Cryptography _crypto = new Cryptography();
+
         public byte[] GetFCRT(ref NANDReader reader) {
             reader.Seek(0x8000, SeekOrigin.Begin);
             for(var i = 0; reader.Position < reader.Length; i = 0) {
@@ -29,23 +31,32 @@
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "FCRT");
         }
 
-        public byte[] GetKeyVault(ref NANDReader reader) {
+        public byte[] GetKeyVault(ref NANDReader reader, bool decrypted = false) {
             reader.Seek(0x4000, SeekOrigin.Begin);
-            return reader.ReadBytes(0x4000);
+            if (!decrypted)
+                return reader.ReadBytes(0x4000);
+            var kv = GetKeyVault(ref reader);
+            var cpukey = GetNANDCPUKey(ref reader);
+            _crypto.DecryptKV(ref kv, cpukey);
+            if (_crypto.VerifyKVDecrypted(ref kv, cpukey))
+                return kv;
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
         public byte[] GetKeyVault(ref NANDReader reader, string cpukey) {
             var kv = GetKeyVault(ref reader);
-            var crypto = new Cryptography();
-            crypto.DecryptKV(ref kv, cpukey);
-            return kv;
+            _crypto.DecryptKV(ref kv, cpukey);
+            if (_crypto.VerifyKVDecrypted(ref kv, cpukey))
+                return kv;
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
         public byte[] GetKeyVault(ref NANDReader reader, byte[] cpukey) {
             var kv = GetKeyVault(ref reader);
-            var crypto = new Cryptography();
-            crypto.DecryptKV(ref kv, cpukey);
-            return kv;
+            _crypto.DecryptKV(ref kv, cpukey);
+            if (_crypto.VerifyKVDecrypted(ref kv, cpukey))
+                return kv;
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
         public byte[] GetSMC(ref NANDReader reader, bool decrypted = false) {
@@ -58,8 +69,7 @@
             if(!decrypted)
                 return reader.ReadBytes((int) size);
             tmp = reader.ReadBytes((int) size);
-            var crypto = new Cryptography();
-            crypto.DecryptSMC(ref tmp);
+            _crypto.DecryptSMC(ref tmp);
             if(!Cryptography.VerifySMCDecrypted(ref tmp))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
             return tmp;
@@ -156,6 +166,7 @@
         }
 
         private static bool GetByteKey(ref NANDReader reader, int offset, out byte[] key) {
+            Debug.SendDebug("Grabbing Byte Key @ 0x{0:X}", offset);
             var keyutils = new CpukeyUtils();
             reader.Seek(offset, SeekOrigin.Begin);
             key = reader.ReadBytes(0x10);
@@ -163,19 +174,28 @@
                 keyutils.VerifyCpuKey(ref key);
                 return true;
             }
-            catch {
+            catch (X360UtilsException ex){
+                Debug.SendDebug(ex.ToString());
                 return false;
             }
         }
 
         private static bool GetASCIIKey(ref NANDReader reader, int offset, out string key) {
+            Debug.SendDebug("Grabbing ASCII Key @ 0x{0:X}", offset);
             key = null;
             var keyutils = new CpukeyUtils();
             reader.Seek(offset, SeekOrigin.Begin);
             var tmp = reader.ReadBytes(0x10);
             try {
                 key = Encoding.ASCII.GetString(tmp);
-                return keyutils.VerifyCpuKey(key);
+                try {
+                    keyutils.VerifyCpuKey(key);
+                    return true;
+                }
+                catch(X360UtilsException ex) {
+                    Debug.SendDebug(ex.ToString());
+                    return false;
+                }
             }
             catch {
                 return false;
@@ -190,12 +210,15 @@
                 {
                     if(!GetByteKey(ref reader, 0x700, out key)) // Blakcat Freeboot storage (MMC type offset)
                     {
-                        if(!GetByteKey(ref reader, 0x95020, out key)) // Virtual Fuses
+                        if(!GetByteKey(ref reader, 0x600, out key)) // xeBuild GUI Offset
                         {
-                            string keys;
-                            if(!GetASCIIKey(ref reader, 0x600, out keys)) // XeBuild GUI method
-                                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
-                            return keys;
+                            if(!GetByteKey(ref reader, 0x95020, out key)) // Virtual Fuses
+                            {
+                                string keys;
+                                if(!GetASCIIKey(ref reader, 0x600, out keys)) // xeBuild GUI ASCII Method
+                                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+                                return keys;
+                            }
                         }
                     }
                 }
