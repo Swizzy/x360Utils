@@ -8,7 +8,7 @@ using x360Utils.Common;
 #endregion
 
 namespace x360Utils.CPUKey {
-    public class CpukeyUtils {
+    public sealed class CpukeyUtils {
         private static Random _random = new Random((int) (DateTime.Now.Ticks & 0xFFFF));
 
         public static void UpdateRandom(int seed) {
@@ -21,8 +21,15 @@ namespace x360Utils.CPUKey {
                 _random.NextBytes(key);
                 if (BitOperations.DataIsZero(ref key, 0, key.Length))
                     UpdateRandom((int) (DateTime.Now.Ticks & 0xFFFF));
-            } while (!VerifyCpuKey(ref key));
-            return key;
+                try
+                {
+                    VerifyCpuKey(ref key);
+                    return key;
+                }
+                catch (X360UtilsException)
+                {
+                }
+            } while (true);
         }
 
         private static void CalculateCPUKeyECD(ref byte[] key) {
@@ -46,13 +53,13 @@ namespace x360Utils.CPUKey {
             }
         }
 
-        public bool VerifyCpuKey(string cpukey) {
+        public void VerifyCpuKey(string cpukey) {
             cpukey = cpukey.Trim();
             var tmp = StringUtils.HexToArray(cpukey);
-            return VerifyCpuKey(ref tmp);
+            VerifyCpuKey(ref tmp);
         }
 
-        public bool VerifyCpuKey(ref byte[] cpukey) {
+        public void VerifyCpuKey(ref byte[] cpukey) {
             if (cpukey.Length < 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
             if (cpukey.Length > 0x10)
@@ -68,7 +75,6 @@ namespace x360Utils.CPUKey {
             CalculateCPUKeyECD(ref key2);
             if (!BitOperations.CompareByteArrays(ref cpukey, ref key2))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyInvalidECD);
-            return true;
         }
 
         public bool ReadKeyfile(string file, out string cpukey) {
@@ -82,7 +88,13 @@ namespace x360Utils.CPUKey {
                 if (string.IsNullOrEmpty(key) || !StringUtils.StringIsHex(key))
                     return false;
                 cpukey = key.Trim().ToUpper();
-                return VerifyCpuKey(cpukey);
+                try {
+                    VerifyCpuKey(cpukey);
+                    return true;
+                }
+                catch (X360UtilsException) {
+                    return false;
+                }
             }
         }
 
@@ -109,7 +121,15 @@ namespace x360Utils.CPUKey {
             if (key1 == 0 || key2 == 0 || key3 == 0 || key4 == 0)
                 return false;
             cpukey = (key1 | key2).ToString("X16") + (key3 | key4).ToString("X16");
-            return VerifyCpuKey(cpukey);
+            try
+            {
+                VerifyCpuKey(cpukey);
+                return true;
+            }
+            catch (X360UtilsException)
+            {
+                return false;
+            }
         }
 
         public void GetCPUKeyFromTextFile(string file, out string cpukey) {
