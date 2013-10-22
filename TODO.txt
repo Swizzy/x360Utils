@@ -1,0 +1,4 @@
+- Add badblock management to the NANDReader
+- Add more tests to the Test GUI
+- Add missing features
+- Fix bugs
