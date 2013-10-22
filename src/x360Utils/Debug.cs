@@ -1,9 +1,4 @@
-﻿#if DEBUG
-#define PRINTDEBUG
-// Make sure we print debug messages on debug builds
-#endif
-
-#region
+﻿#region
 
 using System;
 using System.Diagnostics;
@@ -19,7 +14,7 @@ namespace x360Utils {
 
         public static event EventHandler<EventArg<string>> DebugOutput;
 
-        [Conditional("PRINTDEBUG")]
+        [Conditional("PRINTDEBUG")] [Conditional("DEBUG")] 
         internal static void SendDebug(string message, params object[] args) {
             message = args.Length == 0 ? message : string.Format(message, args);
             var dbg = DebugOutput;
