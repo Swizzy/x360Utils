@@ -34,5 +34,9 @@ namespace x360Utils {
             ErrorCode = errorCode;
             Message = message;
         }
+
+        public override string ToString() {
+            return string.Format("x360UtilsException!{0}ErrorCode: {1}{0}Message: {2}{0}StackTrace: {0}{3}", Environment.NewLine, ErrorCode, Message, StackTrace);
+        }
     }
 }
