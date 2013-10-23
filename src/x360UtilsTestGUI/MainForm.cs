@@ -167,8 +167,8 @@
             AddDone();
         }
 
-        private void GetsmcconfigbtnClick(object sender, EventArgs e)
-        {
+        private void GetsmcconfigbtnClick(object sender, EventArgs e) {
+            _sw = Stopwatch.StartNew();
             var ofd = new OpenFileDialog();
             if (ofd.ShowDialog() != DialogResult.OK)
                 return;
@@ -200,6 +200,54 @@
                 }
             }
             AddOutput(Environment.NewLine);
+            AddDone();
+        }
+
+        private void GetsmcbtnClick(object sender, EventArgs e)
+        {
+            _sw = Stopwatch.StartNew();
+            var ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() != DialogResult.OK)
+                return;
+            using (var reader = new NANDReader(ofd.FileName))
+            {
+                try
+                {
+                    AddOutput("Grabbing SMC from NAND: ");
+                    var data = _x360NAND.GetSMC(reader, true);
+                    var smc = new SMC();
+                    var type = smc.GetType(ref data);
+                    AddOutput(string.Format("SMC Version: {0}", smc.GetVersion(ref data)));
+                    AddOutput(string.Format("\r\nSMC Type: {0}", type));
+                    if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag) {
+                        try {
+                            AddOutput(string.Format("\r\nTMS Patch: {0}", (SMC.TMSTDIValues)smc.GetTMS(ref data)));
+                        }
+                        catch (X360UtilsException ex)
+                        {
+                            if (ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound)
+                                AddOutput("\r\nTMS Patch: Not Found!");
+                        }
+                        for(var i = 0; i < 4; i++) {
+                            try {
+                                AddOutput(string.Format("\r\nTDI{1} Patch: {0}", (SMC.TMSTDIValues)smc.GetTDI(ref data, i), i));
+                            }
+                            catch(X360UtilsException ex) {
+                                if(ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound)
+                                    AddOutput(string.Format("\r\nTDI{0} Patch: Not Found!", i));
+                            }
+                        }
+                    }
+                    AddOutput(string.Format("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes": "No"));
+                }
+                catch (X360UtilsException ex)
+                {
+                    AddOutput("FAILED!");
+                    AddException(ex.ToString());
+                }
+            }
+            AddOutput(Environment.NewLine);
+            AddDone();
         }
     }
 }

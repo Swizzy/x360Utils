@@ -129,12 +129,11 @@ namespace x360Utils.NAND {
         public byte GetTMS(ref byte[] smcdata) {
             DecryptCheck(ref smcdata);
             for (var i = 0; i < smcdata.Length; i++) {
-                if (smcdata[i] != 0xD2 || smcdata[i + 1] != smcdata[i + 9] || smcdata[i + 2] != 0x74 ||
-                    smcdata[i + 4] != 0xD5 || smcdata[i + 5] != 0xE0 || smcdata[i + 6] != 0xFD || smcdata[i + 7] != 0x22 ||
-                    smcdata[i + 8] != 0xC2)
+                if (smcdata[i] != 0xD2)
                     continue;
-                Debug.SendDebug("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i,
-                                (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
+                if (smcdata[i + 1] != smcdata[i + 9] || smcdata[i + 2] != 0x74 || smcdata[i + 4] != 0xD5 || smcdata[i + 5] != 0xE0 || smcdata[i + 6] != 0xFD || smcdata[i + 7] != 0x22 || smcdata[i + 8] != 0xC2)
+                    continue;
+                Debug.SendDebug("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
                 return smcdata[i + 1];
             }
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
@@ -211,8 +210,11 @@ namespace x360Utils.NAND {
             switch (num) {
                 case -1:
                     Debug.SendDebug("Patching TDI in all 4 places...\n");
-                    return SetTDI(ref smcdata, tdi, 0) && SetTDI(ref smcdata, tdi, 1) && SetTDI(ref smcdata, tdi, 2) &&
-                           SetTDI(ref smcdata, tdi, 3);
+                    var ret = false;
+                    for(var i = 0; i < 4; i++)
+                        if(SetTDI(ref smcdata, tdi, i))
+                            ret = true;
+                    return ret;
                 case 0:
                     for (var i = 0; i < smcdata.Length; i++) {
                         if (smcdata[i] != 0x92 || smcdata[i + 4] != 0xDF || smcdata[i + 5] != 0xF8 ||

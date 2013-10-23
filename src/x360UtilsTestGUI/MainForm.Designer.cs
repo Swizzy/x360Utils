@@ -125,6 +125,7 @@
             this.getsmcbtn.TabIndex = 4;
             this.getsmcbtn.Text = "Get SMC From NAND";
             this.getsmcbtn.UseVisualStyleBackColor = true;
+            this.getsmcbtn.Click += new System.EventHandler(this.GetsmcbtnClick);
             // 
             // outtab
             // 
