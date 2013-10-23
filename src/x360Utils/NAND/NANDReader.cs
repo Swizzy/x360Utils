@@ -10,6 +10,7 @@ namespace x360Utils.NAND {
 
     public sealed class NANDReader : Stream {
         public readonly bool HasSpare;
+        private bool _forcedSB;
         public readonly NANDSpare.MetaType MetaType;
         private readonly BinaryReader _binaryReader;
         private readonly List<long> _fsBlocks = new List<long>();
@@ -26,6 +27,14 @@ namespace x360Utils.NAND {
                 Debug.SendDebug("Checking for SpareType...");
                 MetaType = NANDSpare.DetectSpareType(this);
                 Debug.SendDebug("MetaType: {0}", MetaType);
+                //Debug.SendDebug("Checking for bad blocks...");
+                //try {
+                //    FindBadBlocks();
+                //}
+                //catch (X360UtilsException ex) {
+                //    if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataNotFound)
+                //        throw;
+                //}
             }
             else
                 MetaType = NANDSpare.MetaType.MetaTypeNone;
@@ -165,27 +174,32 @@ namespace x360Utils.NAND {
                 var tmp = _binaryReader.ReadBytes(0x10);
                 if (NANDSpare.PageIsFS(ref tmp))
                     _fsBlocks.Add(Position);
-                RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next block
+                RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
             }
             if (_fsBlocks.Count > 0)
                 return _fsBlocks.ToArray();
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
         }
 
-        public long[] FindBadBlocks() {
+        public long[] FindBadBlocks(bool forceSB = false) {
             if (!HasSpare)
                 throw new NotSupportedException();
+            if (_forcedSB && !forceSB || !_forcedSB && forceSB)
+                _badBlocks.Clear();
             if(_badBlocks.Count > 0)
                 return _badBlocks.ToArray();
+            _forcedSB = forceSB;
             _badBlocks.Clear();
             RawSeek(0x200, SeekOrigin.Begin); // Seek to first page spare data...
-            var totalBlocks = Length / (MetaType == NANDSpare.MetaType.MetaType2 ? 0x20000 : 0x4000);
+            var totalBlocks = Length / (MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSB ? 0x20000 : 0x4000) : 0x4000);
             for (var block = 0; block < totalBlocks; block++)
             {
                 var spare = RawReadBytes(0x10);
-                if (NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType))
+                if(NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType)) {
+                    Debug.SendDebug("BadBlock Marker detected @ block 0x{0:X}", block);
                     _badBlocks.Add(block);
-                RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? 0x20FF0 : 0x41F0, SeekOrigin.Current);
+                }
+                RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSB ? 0x20FF0 : 0x41F0) : 0x41F0, SeekOrigin.Current);
             }
             if (_badBlocks.Count > 0)
                 return _badBlocks.ToArray();

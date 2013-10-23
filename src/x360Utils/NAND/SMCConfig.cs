@@ -7,7 +7,9 @@ using x360Utils.Common;
 #endregion
 
 namespace x360Utils.NAND {
-    internal class SMCConfig {
+    using System.Collections.Generic;
+
+    public class SMCConfig {
         #region SMCConfigFans enum
 
         public enum SMCConfigFans {
@@ -30,21 +32,19 @@ namespace x360Utils.NAND {
 
         #endregion
 
-        private static ushort CalculateSMCCheckSum(ref byte[] smcConfig) {
+        private static uint CalculateSMCCheckSum(IList<byte> smcConfig) {
             uint i, len, sum = 0;
             for (i = 0, len = 252; i < len; i++)
                 sum += (uint) smcConfig[(int) (i + 0x10)] & 0xFF;
-            sum = (~sum) & 0xFFFF;
-            return (ushort) (((sum & 0xFF00) << 8) + ((sum & 0xFF) << 24));
+            return (~sum & 0xFFFF);
         }
 
-        public void VerifySMCConfigChecksum(ref byte[] smcconfigdata) {
-            var calculatedCheckSum = CalculateSMCCheckSum(ref smcconfigdata);
-            var checkSum = BitOperations.Swap(BitConverter.ToUInt16(smcconfigdata, 0));
+        public void VerifySMCConfigChecksum(byte[] smcconfigdata) {
+            var checkSum = BitConverter.ToUInt16(smcconfigdata, 0);
+            var calculatedCheckSum = CalculateSMCCheckSum(smcconfigdata);
             if (checkSum == calculatedCheckSum)
                 return;
-            Debug.SendDebug("ERROR: SMC_Config Checksums don't match! Expected: {0} Calculated: {1}", checkSum,
-                            calculatedCheckSum);
+            Debug.SendDebug("ERROR: SMC_Config Checksums don't match! Expected: {0:X4} Calculated: {1:X4}", checkSum, calculatedCheckSum);
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadChecksum);
         }
 
@@ -64,14 +64,14 @@ namespace x360Utils.NAND {
 
         public string GetVideoRegion(ref byte[] smcconfigdata) {
             return
-                Translators.TranslateVideoRegion(string.Format("0x{0:X}{1:X}", smcconfigdata[0x22A],
+                Translators.TranslateVideoRegion(string.Format("0x{0:X}{1:X2}", smcconfigdata[0x22A],
                                                                smcconfigdata[0x22B]));
         }
 
         public string GetGameRegion(ref byte[] smcconfigdata, bool includebytes = false) {
             return
                 Translators.TranslateGameRegion(
-                    string.Format("0x{0:X}{1:X}", smcconfigdata[0x22C], smcconfigdata[0x22D]), includebytes);
+                    string.Format("0x{0:X2}{1:X2}", smcconfigdata[0x22C], smcconfigdata[0x22D]), includebytes);
         }
 
         public string GetDVDRegion(ref byte[] smcconfigdata) {

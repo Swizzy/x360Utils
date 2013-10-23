@@ -1,13 +1,16 @@
 ﻿namespace x360UtilsTestGUI {
     using System;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Reflection;
     using System.Windows.Forms;
     using x360Utils;
     using x360Utils.NAND;
+    using Debug = x360Utils.Debug;
 
     internal sealed partial class MainForm : Form {
-        private readonly X360NAND x360NAND = new X360NAND();
+        private readonly X360NAND _x360NAND = new X360NAND();
+        private Stopwatch _sw;
 
         internal MainForm() {
             InitializeComponent();
@@ -59,6 +62,11 @@
             }
         }
 
+        private void AddDone() {
+            _sw.Stop();
+            AddOutput(string.Format("Took: {0} Minutes {1} Seconds {2} Milliseconds\r\n", _sw.Elapsed.Minutes, _sw.Elapsed.Seconds, _sw.Elapsed.Milliseconds));
+        }
+
         private void GetKeyBtnClick(object sender, EventArgs e) {
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
@@ -66,7 +74,7 @@
             using(var reader = new NANDReader(ofd.FileName)) {
                 try {
                     AddOutput("Grabbing CPUKey from NAND: ");
-                    AddOutput(x360NAND.GetNANDCPUKey(reader));
+                    AddOutput(_x360NAND.GetNANDCPUKey(reader));
                 }
                 catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
@@ -84,7 +92,7 @@
                 try {
                     AddOutput("Grabbing FUSES from NAND: ");
                     AddOutput(Environment.NewLine);
-                    AddOutput(x360NAND.GetVirtualFuses(reader));
+                    AddOutput(_x360NAND.GetVirtualFuses(reader));
                 }
                 catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
@@ -113,11 +121,11 @@
         }
 
         private void Getlaunchini(object sender, DoWorkEventArgs e) {
+            _sw = Stopwatch.StartNew();
             using(var reader = new NANDReader(e.Argument as string)) {
                 try {
                     AddOutput("Grabbing Launch.ini from NAND: ");
-                    AddOutput(Environment.NewLine);
-                    AddOutput(x360NAND.GetLaunchIni(reader));
+                    AddOutput(string.Format("{0}{1}", Environment.NewLine, _x360NAND.GetLaunchIni(reader)));
                 }
                 catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
@@ -125,6 +133,7 @@
                 }
             }
             AddOutput(Environment.NewLine);
+            AddDone();
         }
 
         private void GetbadblocksbtnClick(object sender, EventArgs e) {
@@ -137,6 +146,7 @@
         }
 
         private void GetBadblocks(object sender, DoWorkEventArgs e) {
+            _sw = Stopwatch.StartNew();
             using(var reader = new NANDReader(e.Argument as string)) {
                 try {
                     AddOutput("Grabbing BadBlock info from NAND: ");
@@ -146,11 +156,47 @@
                 }
                 catch(X360UtilsException ex) {
                     if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataNotFound) {
-                        AddOutput("FAILED!");
+                        AddOutput("FAILED!\r\n");
                         AddException(ex.ToString());
                     }
                     else
-                        AddOutput("No BadBlocks Found!");
+                        AddOutput("No BadBlocks Found!\r\n");
+                }
+            }
+            AddOutput(Environment.NewLine);
+            AddDone();
+        }
+
+        private void GetsmcconfigbtnClick(object sender, EventArgs e)
+        {
+            var ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() != DialogResult.OK)
+                return;
+            using (var reader = new NANDReader(ofd.FileName))
+            {
+                try
+                {
+                    AddOutput("Grabbing SMC_Config from NAND: ");
+                    var cfg = _x360NAND.GetSMCConfig(reader);
+                    var config = new SMCConfig();
+                    AddOutput(string.Format("\r\nChecksum: {0}", config.GetCheckSum(ref cfg)));
+                    AddOutput(string.Format("\r\nDVDRegion: {0}", config.GetDVDRegion(ref cfg)));
+                    AddOutput(string.Format("\r\nCPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.CPU)));
+                    AddOutput(string.Format("\r\nGPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.GPU)));
+                    AddOutput(string.Format("\r\nGameRegion: {0}", config.GetGameRegion(ref cfg)));
+                    AddOutput(string.Format("\r\nMACAdress: {0}", config.GetMACAdress(ref cfg)));
+                    AddOutput(string.Format("\r\nCPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPU)));
+                    AddOutput(string.Format("\r\nCPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPUMax)));
+                    AddOutput(string.Format("\r\nGPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPU)));
+                    AddOutput(string.Format("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPUMax)));
+                    AddOutput(string.Format("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAM)));
+                    AddOutput(string.Format("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAMMax)));
+                    AddOutput(string.Format("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg)));                    
+                }
+                catch (X360UtilsException ex)
+                {
+                    AddOutput("FAILED!");
+                    AddException(ex.ToString());
                 }
             }
             AddOutput(Environment.NewLine);

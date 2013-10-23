@@ -7,7 +7,7 @@ using x360Utils.Common;
 #endregion
 
 namespace x360Utils.NAND {
-    internal sealed class Cryptography {
+    public sealed class Cryptography {
         #region BLEncryptionTypes enum
 
         public enum BLEncryptionTypes : ushort {

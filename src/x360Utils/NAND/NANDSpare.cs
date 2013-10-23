@@ -14,7 +14,7 @@
 
         #endregion
 
-        public static MetaType DetectSpareType(NANDReader reader, bool firsttry = true) {
+        internal static MetaType DetectSpareType(NANDReader reader, bool firsttry = true) {
             if(!reader.HasSpare)
                 return MetaType.MetaTypeNone;
             if(firsttry)
@@ -22,15 +22,13 @@
             else
                 reader.RawSeek(reader.RawLength - 0x4000, SeekOrigin.Begin);
             var tmp = reader.RawReadBytes(0x10);
-            if(tmp[5] == 0xFF) {
-                // small block
+            if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType0)) {
                 if(BlockIDFromSpare(ref tmp, MetaType.MetaType0) == 1)
                     return MetaType.MetaType0;
-                // big on small
                 if(BlockIDFromSpare(ref tmp, MetaType.MetaType1) == 1)
                     return MetaType.MetaType1;
             }
-            else if(tmp[0] == 0xFF) {
+            if (!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
                 if(firsttry)
                     reader.RawSeek(0x21200, SeekOrigin.Begin);
                 else if(reader.RawLength <= 0x4200000)
@@ -38,9 +36,9 @@
                 else
                     reader.RawSeek(0x4200000 - 0x4000, SeekOrigin.Begin);
                 tmp = reader.RawReadBytes(0x10);
-                // big block
-                if(BlockIDFromSpare(ref tmp, MetaType.MetaType2) == 1 && tmp[0] == 0xFF)
-                    return MetaType.MetaType2;
+                if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2))
+                    if(BlockIDFromSpare(ref tmp, MetaType.MetaType2) == 1)
+                        return MetaType.MetaType2;
             }
             else
                 Debug.SendDebug(firsttry ? "Block 1 is bad!" : "The last system block is bad!");
@@ -49,13 +47,13 @@
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownMetaType);
         }
 
-        public static bool CheckIsBadBlockSpare(ref byte[] sparedata, MetaType metaType) {
+        public static bool CheckIsBadBlockSpare(ref byte[] spareData, MetaType metaType) {
             switch(metaType) {
                 case MetaType.MetaType0:
                 case MetaType.MetaType1:
-                    return sparedata[5] != 0xFF;
+                    return spareData[5] != 0xFF;
                 case MetaType.MetaType2:
-                    return sparedata[0] != 0xFF;
+                    return spareData[0] != 0xFF;
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }
@@ -73,38 +71,28 @@
             }
         }
 
-        public static int BlockIDFromSpare(ref byte[] sparedata, MetaType metaType) {
+        public static int BlockIDFromSpare(ref byte[] spareData, MetaType metaType) {
+            if (CheckIsBadBlockSpare(ref spareData, metaType))
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
             switch(metaType) {
                 case MetaType.MetaType0:
-                    if(sparedata[5] != 0xFF)
-                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
-                    return BitConverter.ToUInt16(sparedata, 0);
+                    return BitConverter.ToUInt16(spareData, 0);
                 case MetaType.MetaType1:
-                    if(sparedata[5] != 0xFF)
-                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
-                    return BitConverter.ToUInt16(sparedata, 1);
                 case MetaType.MetaType2:
-                    if(sparedata[0] != 0xFF)
-                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
-                    return BitConverter.ToUInt16(sparedata, 1);
+                    return BitConverter.ToUInt16(spareData, 1);
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }
         }
 
         public static int BlockIDFromBlock(ref byte[] blockData, MetaType metaType) {
+            if (CheckIsBadBlock(ref blockData, metaType))
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
             switch(metaType) {
                 case MetaType.MetaType0:
-                    if(blockData[0x205] != 0xFF)
-                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
                     return BitConverter.ToUInt16(blockData, 0x200);
-                case MetaType.MetaType1:
-                    if(blockData[0x205] != 0xFF)
-                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
-                    return BitConverter.ToUInt16(blockData, 0x201);
                 case MetaType.MetaType2:
-                    if(blockData[0x200] != 0xFF)
-                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
+                case MetaType.MetaType1:
                     return BitConverter.ToUInt16(blockData, 0x201);
                 default:
                     throw new ArgumentOutOfRangeException("metaType");

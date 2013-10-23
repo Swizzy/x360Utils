@@ -8,7 +8,7 @@ using x360Utils.Common;
 #endregion
 
 namespace x360Utils.NAND {
-    internal class Keyvault {
+    public class Keyvault {
         #region DateFormats enum
 
         public enum DateFormats {

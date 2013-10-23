@@ -35,8 +35,8 @@
             this.getfusebtn = new System.Windows.Forms.Button();
             this.getlaunchinibtn = new System.Windows.Forms.Button();
             this.getbadblocksbtn = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
-            this.button6 = new System.Windows.Forms.Button();
+            this.getsmcconfigbtn = new System.Windows.Forms.Button();
+            this.getsmcbtn = new System.Windows.Forms.Button();
             this.outtab = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.outbox = new System.Windows.Forms.RichTextBox();
@@ -107,23 +107,24 @@
             this.getbadblocksbtn.UseVisualStyleBackColor = true;
             this.getbadblocksbtn.Click += new System.EventHandler(this.GetbadblocksbtnClick);
             // 
-            // button5
+            // getsmcconfigbtn
             // 
-            this.button5.Location = new System.Drawing.Point(727, 71);
-            this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(183, 23);
-            this.button5.TabIndex = 4;
-            this.button5.Text = "Get SMC_Config from NAND";
-            this.button5.UseVisualStyleBackColor = true;
+            this.getsmcconfigbtn.Location = new System.Drawing.Point(727, 71);
+            this.getsmcconfigbtn.Name = "getsmcconfigbtn";
+            this.getsmcconfigbtn.Size = new System.Drawing.Size(183, 23);
+            this.getsmcconfigbtn.TabIndex = 4;
+            this.getsmcconfigbtn.Text = "Get SMC_Config from NAND";
+            this.getsmcconfigbtn.UseVisualStyleBackColor = true;
+            this.getsmcconfigbtn.Click += new System.EventHandler(this.GetsmcconfigbtnClick);
             // 
-            // button6
+            // getsmcbtn
             // 
-            this.button6.Location = new System.Drawing.Point(916, 70);
-            this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(183, 23);
-            this.button6.TabIndex = 4;
-            this.button6.Text = "Get SMC From NAND";
-            this.button6.UseVisualStyleBackColor = true;
+            this.getsmcbtn.Location = new System.Drawing.Point(916, 70);
+            this.getsmcbtn.Name = "getsmcbtn";
+            this.getsmcbtn.Size = new System.Drawing.Size(183, 23);
+            this.getsmcbtn.TabIndex = 4;
+            this.getsmcbtn.Text = "Get SMC From NAND";
+            this.getsmcbtn.UseVisualStyleBackColor = true;
             // 
             // outtab
             // 
@@ -203,8 +204,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1112, 360);
             this.Controls.Add(this.outtab);
-            this.Controls.Add(this.button6);
-            this.Controls.Add(this.button5);
+            this.Controls.Add(this.getsmcbtn);
+            this.Controls.Add(this.getsmcconfigbtn);
             this.Controls.Add(this.getfusebtn);
             this.Controls.Add(this.getbadblocksbtn);
             this.Controls.Add(this.getlaunchinibtn);
@@ -231,8 +232,8 @@
         private System.Windows.Forms.Button getfusebtn;
         private System.Windows.Forms.Button getlaunchinibtn;
         private System.Windows.Forms.Button getbadblocksbtn;
-        private System.Windows.Forms.Button button5;
-        private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.Button getsmcconfigbtn;
+        private System.Windows.Forms.Button getsmcbtn;
         private System.Windows.Forms.TabControl outtab;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.RichTextBox outbox;

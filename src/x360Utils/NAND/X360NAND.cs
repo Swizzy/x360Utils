@@ -6,7 +6,7 @@
     using x360Utils.CPUKey;
     using x360Utils.Common;
 
-    public class X360NAND {
+    public sealed class X360NAND {
         readonly Cryptography _crypto = new Cryptography();
 
         public byte[] GetFCRT(NANDReader reader) {
@@ -75,31 +75,23 @@
             return tmp;
         }
 
-        private static bool GetSMCConfig(NANDReader reader, int offset, out byte[] data) {
-            data = null;
-            try {
-                var cfg = new SMCConfig();
-                reader.Seek(offset, SeekOrigin.Begin);
-                data = reader.ReadBytes(0x400);
-                cfg.VerifySMCConfigChecksum(ref data);
-            }
-            catch(X360UtilsException ex) {
-                if(ex.ErrorCode == X360UtilsException.X360UtilsErrors.BadChecksum)
-                    return false;
-                throw;
-            }
-            return true;
-        }
-
         public byte[] GetSMCConfig(NANDReader reader) {
-            byte[] data;
-            if(!GetSMCConfig(reader, 0xF7C000, out data)) // 16MB NAND
+            if(reader.RawLength == 0x1080000) // 16MB NAND
+                reader.Seek(0xF7C000, SeekOrigin.Begin);
+            else if(!reader.HasSpare) // MMC NAND
+                reader.Seek(0x2FFC000, SeekOrigin.Begin);
+            else // BigBlock NAND
+                reader.Seek(0x3BE0000, SeekOrigin.Begin);
+            var data = reader.ReadBytes(0x400);
+            try
             {
-                if(!GetSMCConfig(reader, 0x2FFC000, out data)) // MMC NAND
-                {
-                    if(!GetSMCConfig(reader, 0x3BE0000, out data)) // BigBlock NAND
-                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
-                }
+                var cfg = new SMCConfig();
+                cfg.VerifySMCConfigChecksum(data);
+            }
+            catch (X360UtilsException ex) {
+                if(ex.ErrorCode == X360UtilsException.X360UtilsErrors.BadChecksum)
+                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+                throw;
             }
             return data;
         }
@@ -227,17 +219,18 @@
         }
 
         public string GetLaunchIni(NANDReader reader) {
-            long[] fsblocks = new long[] { };
-            var fsblockindex = 0;
-            if(reader.HasSpare)
-                fsblocks = reader.FindFSBlocks();
-            else
+            //long[] fsblocks = new long[] { };
+            //var fsblockindex = 0;
+            //if(reader.HasSpare)
+            //    fsblocks = reader.FindFSBlocks();
+            //else
                 reader.Seek(0xC000, SeekOrigin.Begin);
-            for(var i = 0; reader.Position < reader.Length; i = 0, fsblockindex++) {
-                if (reader.HasSpare && fsblocks != null && fsblocks.Length < fsblockindex)
-                    reader.Seek(fsblocks[fsblockindex], SeekOrigin.Begin);
-                else if (reader.HasSpare && fsblocks != null && fsblocks.Length >= fsblockindex)
-                    break; // We can't find it!
+                for (var i = 0; reader.Position < reader.Length; i = 0/*, fsblockindex++*/)
+                {
+                //if (reader.HasSpare && fsblocks != null && fsblocks.Length < fsblockindex)
+                //    reader.Seek(fsblocks[fsblockindex], SeekOrigin.Begin);
+                //else if (reader.HasSpare && fsblocks != null && fsblocks.Length >= fsblockindex)
+                //    break; // We can't find it!
                 var tmp = reader.ReadBytes(0x4000); // read block
                 Debug.SendDebug("Searching for Launch.ini!");
                 for(;i < tmp.Length; i++) {
