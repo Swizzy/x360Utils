@@ -47,24 +47,34 @@
         public static bool CompareByteArrays(ref byte[] a1, ref byte[] a2, bool checkmax = true) {
             if (a1 == a2)
                 return true;
-            if (a1 == null || a2 == null || (checkmax && a1.Length != a2.Length))
+            if (a1 == null || a2 == null)
+                return false;
+            if(checkmax && a1.Length != a2.Length)
                 return false;
             if(!checkmax) {
+                Debug.SendDebug("checkmax = false");
                 if(a1.Length < a2.Length) {
                     for(var index = 0; index < a1.Length; index++)
-                        if(a1[index] != a2[index])
+                        if(a1[index] != a2[index]) {
+                            Debug.SendDebug("a1[{0}] (0x{1:X2}) != a2[{0}] (0x{2:X})!", index, a1[index], a2[index]);
                             return false;
+                        }
                 }
                 else {
                     for(var index = 0; index < a2.Length; index++)
-                        if(a1[index] != a2[index])
+                        if(a1[index] != a2[index]) {
+                            Debug.SendDebug("a1[{0}] (0x{1:X2}) != a2[{0}] (0x{2:X})!", index, a1[index], a2[index]);
                             return false;
+                        }
                 }
             }
             else {
+                Debug.SendDebug("checkmax = true");
                 for(var index = 0; index < a1.Length; index++)
-                    if(a1[index] != a2[index])
+                    if(a1[index] != a2[index]) {
+                        Debug.SendDebug("a1[{0}] (0x{1:X2}) != a2[{0}] (0x{2:X})!", index, a1[index], a2[index]);
                         return false;
+                    }
             }
             return true;
         }

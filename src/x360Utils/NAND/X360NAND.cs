@@ -9,7 +9,7 @@
     public class X360NAND {
         readonly Cryptography _crypto = new Cryptography();
 
-        public byte[] GetFCRT(ref NANDReader reader) {
+        public byte[] GetFCRT(NANDReader reader) {
             reader.Seek(0x8000, SeekOrigin.Begin);
             for(var i = 0; reader.Position < reader.Length; i = 0) {
                 var tmp = reader.ReadBytes(0x4000);
@@ -31,35 +31,35 @@
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "FCRT");
         }
 
-        public byte[] GetKeyVault(ref NANDReader reader, bool decrypted = false) {
+        public byte[] GetKeyVault(NANDReader reader, bool decrypted = false) {
             reader.Seek(0x4000, SeekOrigin.Begin);
             if (!decrypted)
                 return reader.ReadBytes(0x4000);
-            var kv = GetKeyVault(ref reader);
-            var cpukey = GetNANDCPUKey(ref reader);
+            var kv = GetKeyVault(reader);
+            var cpukey = GetNANDCPUKey(reader);
             _crypto.DecryptKV(ref kv, cpukey);
             if (_crypto.VerifyKVDecrypted(ref kv, cpukey))
                 return kv;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
-        public byte[] GetKeyVault(ref NANDReader reader, string cpukey) {
-            var kv = GetKeyVault(ref reader);
+        public byte[] GetKeyVault(NANDReader reader, string cpukey) {
+            var kv = GetKeyVault(reader);
             _crypto.DecryptKV(ref kv, cpukey);
             if (_crypto.VerifyKVDecrypted(ref kv, cpukey))
                 return kv;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
-        public byte[] GetKeyVault(ref NANDReader reader, byte[] cpukey) {
-            var kv = GetKeyVault(ref reader);
+        public byte[] GetKeyVault(NANDReader reader, byte[] cpukey) {
+            var kv = GetKeyVault(reader);
             _crypto.DecryptKV(ref kv, cpukey);
             if (_crypto.VerifyKVDecrypted(ref kv, cpukey))
                 return kv;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
-        public byte[] GetSMC(ref NANDReader reader, bool decrypted = false) {
+        public byte[] GetSMC(NANDReader reader, bool decrypted = false) {
             reader.Seek(0x78, SeekOrigin.Begin);
             var tmp = reader.ReadBytes(4);
             var size = BitOperations.Swap(BitConverter.ToUInt32(tmp, 0));
@@ -75,7 +75,7 @@
             return tmp;
         }
 
-        private static bool GetSMCConfig(ref NANDReader reader, int offset, out byte[] data) {
+        private static bool GetSMCConfig(NANDReader reader, int offset, out byte[] data) {
             data = null;
             try {
                 var cfg = new SMCConfig();
@@ -91,20 +91,20 @@
             return true;
         }
 
-        public byte[] GetSMCConfig(ref NANDReader reader) {
+        public byte[] GetSMCConfig(NANDReader reader) {
             byte[] data;
-            if(!GetSMCConfig(ref reader, 0xF7C000, out data)) // 16MB NAND
+            if(!GetSMCConfig(reader, 0xF7C000, out data)) // 16MB NAND
             {
-                if(!GetSMCConfig(ref reader, 0x2FFC000, out data)) // MMC NAND
+                if(!GetSMCConfig(reader, 0x2FFC000, out data)) // MMC NAND
                 {
-                    if(!GetSMCConfig(ref reader, 0x3BE0000, out data)) // BigBlock NAND
+                    if(!GetSMCConfig(reader, 0x3BE0000, out data)) // BigBlock NAND
                         throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
                 }
             }
             return data;
         }
 
-        public Bootloader[] GetBootLoaders(ref NANDReader reader, bool readToMemory = false) {
+        public Bootloader[] GetBootLoaders(NANDReader reader, bool readToMemory = false) {
             var bls = new List<Bootloader>();
             reader.Seek(0x8000, SeekOrigin.Begin);
             bls.Add(new Bootloader(reader, readitin : readToMemory));
@@ -150,7 +150,7 @@
             return bls.ToArray();
         }
 
-        public string GetVirtualFuses(ref NANDReader reader) {
+        public string GetVirtualFuses(NANDReader reader) {
             reader.Seek(0x95000, SeekOrigin.Begin);
             var data = reader.ReadBytes(0x60);
             var tmp = new byte[] { 0xC0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0xF0 };
@@ -159,13 +159,13 @@
             var ret = new StringBuilder();
             for(var index = 0; index < data.Length; index++) {
                 if(index % 0x8 == 0 || index == 0)
-                    ret.AppendFormat("\nfuseset {0:##}: ", index / 0x5);
+                    ret.AppendFormat("\nfuseset {0:D2}: ", index / 0x5);
                 ret.Append(data[index].ToString("X2"));
             }
             return ret.ToString().Trim();
         }
 
-        private static bool GetByteKey(ref NANDReader reader, int offset, out byte[] key) {
+        private static bool GetByteKey(NANDReader reader, int offset, out byte[] key) {
             Debug.SendDebug("Grabbing Byte Key @ 0x{0:X}", offset);
             var keyutils = new CpukeyUtils();
             reader.Seek(offset, SeekOrigin.Begin);
@@ -180,7 +180,7 @@
             }
         }
 
-        private static bool GetASCIIKey(ref NANDReader reader, int offset, out string key) {
+        private static bool GetASCIIKey(NANDReader reader, int offset, out string key) {
             Debug.SendDebug("Grabbing ASCII Key @ 0x{0:X}", offset);
             key = null;
             var keyutils = new CpukeyUtils();
@@ -202,20 +202,20 @@
             }
         }
 
-        public string GetNANDCPUKey(ref NANDReader reader) {
+        public string GetNANDCPUKey(NANDReader reader) {
             byte[] key;
-            if(!GetByteKey(ref reader, 0x100, out key)) // Blakcat XeLL
+            if(!GetByteKey(reader, 0x100, out key)) // Blakcat XeLL
             {
-                if(!GetByteKey(ref reader, 0x6d0, out key)) // Blakcat Freeboot storage (Spare type offset)
+                if(!GetByteKey(reader, 0x6d0, out key)) // Blakcat Freeboot storage (Spare type offset)
                 {
-                    if(!GetByteKey(ref reader, 0x700, out key)) // Blakcat Freeboot storage (MMC type offset)
+                    if(!GetByteKey(reader, 0x700, out key)) // Blakcat Freeboot storage (MMC type offset)
                     {
-                        if(!GetByteKey(ref reader, 0x600, out key)) // xeBuild GUI Offset
+                        if(!GetByteKey(reader, 0x600, out key)) // xeBuild GUI Offset
                         {
-                            if(!GetByteKey(ref reader, 0x95020, out key)) // Virtual Fuses
+                            if(!GetByteKey(reader, 0x95020, out key)) // Virtual Fuses
                             {
                                 string keys;
-                                if(!GetASCIIKey(ref reader, 0x600, out keys)) // xeBuild GUI ASCII Method
+                                if(!GetASCIIKey(reader, 0x600, out keys)) // xeBuild GUI ASCII Method
                                     throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
                                 return keys;
                             }
@@ -226,14 +226,26 @@
             return StringUtils.ArrayToHex(key);
         }
 
-        public string GetLaunchIni(ref NANDReader reader) {
-            reader.Seek(0x8000, SeekOrigin.Begin);
-            for(var i = 0; reader.Position < reader.Length; i = 0) {
-                var tmp = reader.ReadBytes(0x4000);
-                while(i < tmp.Length) {
+        public string GetLaunchIni(NANDReader reader) {
+            long[] fsblocks = new long[] { };
+            var fsblockindex = 0;
+            if(reader.HasSpare)
+                fsblocks = reader.FindFSBlocks();
+            else
+                reader.Seek(0xC000, SeekOrigin.Begin);
+            for(var i = 0; reader.Position < reader.Length; i = 0, fsblockindex++) {
+                if (reader.HasSpare && fsblocks != null && fsblocks.Length < fsblockindex)
+                    reader.Seek(fsblocks[fsblockindex], SeekOrigin.Begin);
+                else if (reader.HasSpare && fsblocks != null && fsblocks.Length >= fsblockindex)
+                    break; // We can't find it!
+                var tmp = reader.ReadBytes(0x4000); // read block
+                Debug.SendDebug("Searching for Launch.ini!");
+                for(;i < tmp.Length; i++) {
                     if(tmp[i] != 0x6C)
                         continue;
+                    Debug.SendDebug("0x6C found @ 0x{0:X}", reader.Position + i);
                     if(tmp.Length - i < 0x1C) {
+                        Debug.SendDebug("Buffer is to small! expanding it...");
                         var tmp2 = reader.ReadBytes(0x23);
                         reader.Seek(tmp2.Length, SeekOrigin.Current);
                         Array.Resize(ref tmp, tmp.Length + tmp2.Length);
@@ -241,6 +253,7 @@
                     }
                     if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 || tmp[i + 8] != tmp[i + 3] || tmp[i + 9] != tmp[i + 7])
                         continue;
+                    Debug.SendDebug("Found launch.ini @ 0x{0:X}!", reader.Position + i);
                     reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
                     var data = reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
                     return Encoding.ASCII.GetString(data);

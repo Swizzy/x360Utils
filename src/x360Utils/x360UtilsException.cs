@@ -21,7 +21,8 @@ namespace x360Utils {
             BadChecksum,
             DataInvalid,
             DataDecryptionFailed,
-            DataEncryptionFailed
+            UnkownMetaType,
+            BadBlockDetected
         }
 
         #endregion X360UtilsErrors enum

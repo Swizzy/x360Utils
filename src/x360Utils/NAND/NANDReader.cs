@@ -6,15 +6,29 @@ using System.IO;
 #endregion
 
 namespace x360Utils.NAND {
+    using System.Collections.Generic;
+
     public sealed class NANDReader : Stream {
         public readonly bool HasSpare;
+        public readonly NANDSpare.MetaType MetaType;
         private readonly BinaryReader _binaryReader;
+        private readonly List<long> _fsBlocks = new List<long>();
+        private readonly List<long> _badBlocks = new List<long>();
 
         public NANDReader(string file) {
+            Debug.SendDebug("Creating NANDReader for: {0}", file);
             _binaryReader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
             if (!VerifyMagic())
                 throw new Exception("Bad Magic");
+            Debug.SendDebug("Checking for spare...");
             HasSpare = CheckForSpare();
+            if(HasSpare) {
+                Debug.SendDebug("Checking for SpareType...");
+                MetaType = NANDSpare.DetectSpareType(this);
+                Debug.SendDebug("MetaType: {0}", MetaType);
+            }
+            else
+                MetaType = NANDSpare.MetaType.MetaTypeNone;
         }
 
         #region Overrides of Stream
@@ -54,8 +68,11 @@ namespace x360Utils.NAND {
 
         public override long Seek(long offset, SeekOrigin origin) {
             offset = HasSpare ? ((offset / 0x200) * 0x210) + offset % 0x200 : offset;
-            Debug.SendDebug("Seeking to offset: 0x{0:X}", offset);
-            return _binaryReader.BaseStream.Seek(offset, origin);
+            Debug.SendDebug("Old position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            Debug.SendDebug("Seeking to offset: 0x{0:X} origin: {1}", offset, origin);
+            var ret = _binaryReader.BaseStream.Seek(offset, origin);
+            Debug.SendDebug("New position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            return ret;
         }
 
         public override void SetLength(long value) {
@@ -63,6 +80,7 @@ namespace x360Utils.NAND {
         }
 
         public override int Read(byte[] buffer, int index, int count) {
+            Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
             if (!HasSpare)
                 return _binaryReader.Read(buffer, index, count);
             var pos = (int) _binaryReader.BaseStream.Position % 0x210;
@@ -76,14 +94,15 @@ namespace x360Utils.NAND {
                     return pos;
             }
             while (pos < count) {
-                _binaryReader.BaseStream.Seek(0x210, SeekOrigin.Current);
                 size = count - pos < 0x200 ? count - pos : 0x200;
                 pos += _binaryReader.Read(buffer, pos + index, size);
+                Seek(0x10, SeekOrigin.Current);
             }
             return pos;
         }
 
         public byte[] ReadBytes(int count) {
+            Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
             if (!HasSpare)
                 return _binaryReader.ReadBytes(count);
             var buffer = new byte[count];
@@ -98,7 +117,6 @@ namespace x360Utils.NAND {
                     return buffer;
             }
             while (index < count) {
-                _binaryReader.BaseStream.Seek(0x210, SeekOrigin.Current);
                 size = count - index < 0x200 ? count - index : 0x200;
                 index += Read(buffer, index, size);
             }
@@ -116,9 +134,9 @@ namespace x360Utils.NAND {
         #endregion Overrides of Stream
 
         private bool CheckForSpare() {
-            _binaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
+            RawSeek(0, SeekOrigin.Begin);
             var tmp = _binaryReader.ReadBytes(0x630);
-            _binaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
+            RawSeek(0, SeekOrigin.Begin);
             var ret = true;
             for (var i = 0; i < tmp.Length; i += 0x210) {
                 if (!NANDSpare.CheckPageECD(ref tmp, i))
@@ -128,10 +146,81 @@ namespace x360Utils.NAND {
         }
 
         private bool VerifyMagic() {
-            _binaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
+            Debug.SendDebug("Checking Magic bytes...");
+            RawSeek(0, SeekOrigin.Begin);
             var tmp = _binaryReader.ReadBytes(2);
-            _binaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
+            Debug.SendDebug("Restoring position...");
+            RawSeek(0, SeekOrigin.Begin);
             return (tmp[0] == 0xFF && tmp[1] == 0x4F);
+        }
+
+        public long[] FindFSBlocks() {
+            if (!HasSpare)
+                throw new NotSupportedException();
+            if(_fsBlocks.Count > 0)
+                return _fsBlocks.ToArray();
+            _fsBlocks.Clear();
+            RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
+            for(; _binaryReader.BaseStream.Position < _binaryReader.BaseStream.Length - 0x10;) {
+                var tmp = _binaryReader.ReadBytes(0x10);
+                if (NANDSpare.PageIsFS(ref tmp))
+                    _fsBlocks.Add(Position);
+                RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next block
+            }
+            if (_fsBlocks.Count > 0)
+                return _fsBlocks.ToArray();
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+        }
+
+        public long[] FindBadBlocks() {
+            if (!HasSpare)
+                throw new NotSupportedException();
+            if(_badBlocks.Count > 0)
+                return _badBlocks.ToArray();
+            _badBlocks.Clear();
+            RawSeek(0x200, SeekOrigin.Begin); // Seek to first page spare data...
+            var totalBlocks = Length / (MetaType == NANDSpare.MetaType.MetaType2 ? 0x20000 : 0x4000);
+            for (var block = 0; block < totalBlocks; block++)
+            {
+                var spare = RawReadBytes(0x10);
+                if (NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType))
+                    _badBlocks.Add(block);
+                RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? 0x20FF0 : 0x41F0, SeekOrigin.Current);
+            }
+            if (_badBlocks.Count > 0)
+                return _badBlocks.ToArray();
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+        }
+
+        public long RawSeek(long offset, SeekOrigin origin) {
+            Debug.SendDebug("Old position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            Debug.SendDebug("[RAW]Seeking to offset: 0x{0:X} origin: {1}", offset, origin);
+            var ret = _binaryReader.BaseStream.Seek(offset, origin);
+            Debug.SendDebug("New position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            return ret;
+        }
+
+        public byte[] RawReadBytes(int count)
+        {
+            Debug.SendDebug("[RAW]Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
+            return _binaryReader.ReadBytes(count);
+        }
+
+        public int RawRead(byte[] buffer, int index, int count)
+        {
+            Debug.SendDebug("[RAW]Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
+            return _binaryReader.Read(buffer, index, count);
+        }
+
+        public long RawLength
+        {
+            get { return _binaryReader.BaseStream.Length; }
+        }
+
+        public long RawPosition
+        {
+            get { return _binaryReader.BaseStream.Position; }
+            set { RawSeek(value, SeekOrigin.Begin); }
         }
     }
 }

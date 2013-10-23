@@ -28,22 +28,26 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.dllversionlbl = new System.Windows.Forms.ToolStripStatusLabel();
             this.getkeybtn = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
+            this.getfusebtn = new System.Windows.Forms.Button();
+            this.getlaunchinibtn = new System.Windows.Forms.Button();
+            this.getbadblocksbtn = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.outtab = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.outbox = new System.Windows.Forms.RichTextBox();
+            this.outmenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.debugbox = new System.Windows.Forms.RichTextBox();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            this.outmenu.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -73,32 +77,35 @@
             this.getkeybtn.UseVisualStyleBackColor = true;
             this.getkeybtn.Click += new System.EventHandler(this.GetKeyBtnClick);
             // 
-            // button2
+            // getfusebtn
             // 
-            this.button2.Location = new System.Drawing.Point(916, 12);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(184, 23);
-            this.button2.TabIndex = 3;
-            this.button2.Text = "Get Fuses From NAND";
-            this.button2.UseVisualStyleBackColor = true;
+            this.getfusebtn.Location = new System.Drawing.Point(916, 12);
+            this.getfusebtn.Name = "getfusebtn";
+            this.getfusebtn.Size = new System.Drawing.Size(184, 23);
+            this.getfusebtn.TabIndex = 3;
+            this.getfusebtn.Text = "Get Fuses From NAND";
+            this.getfusebtn.UseVisualStyleBackColor = true;
+            this.getfusebtn.Click += new System.EventHandler(this.GetfusebtnClick);
             // 
-            // button3
+            // getlaunchinibtn
             // 
-            this.button3.Location = new System.Drawing.Point(726, 41);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(184, 23);
-            this.button3.TabIndex = 3;
-            this.button3.Text = "Get Launch.ini from NAND";
-            this.button3.UseVisualStyleBackColor = true;
+            this.getlaunchinibtn.Location = new System.Drawing.Point(726, 41);
+            this.getlaunchinibtn.Name = "getlaunchinibtn";
+            this.getlaunchinibtn.Size = new System.Drawing.Size(184, 23);
+            this.getlaunchinibtn.TabIndex = 3;
+            this.getlaunchinibtn.Text = "Get Launch.ini from NAND";
+            this.getlaunchinibtn.UseVisualStyleBackColor = true;
+            this.getlaunchinibtn.Click += new System.EventHandler(this.GetlaunchinibtnClick);
             // 
-            // button4
+            // getbadblocksbtn
             // 
-            this.button4.Location = new System.Drawing.Point(916, 41);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(184, 23);
-            this.button4.TabIndex = 3;
-            this.button4.Text = "Get Launch.ini from NAND";
-            this.button4.UseVisualStyleBackColor = true;
+            this.getbadblocksbtn.Location = new System.Drawing.Point(916, 41);
+            this.getbadblocksbtn.Name = "getbadblocksbtn";
+            this.getbadblocksbtn.Size = new System.Drawing.Size(184, 23);
+            this.getbadblocksbtn.TabIndex = 3;
+            this.getbadblocksbtn.Text = "Get BadBlocks";
+            this.getbadblocksbtn.UseVisualStyleBackColor = true;
+            this.getbadblocksbtn.Click += new System.EventHandler(this.GetbadblocksbtnClick);
             // 
             // button5
             // 
@@ -139,6 +146,33 @@
             this.tabPage1.Text = "Output";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
+            // outbox
+            // 
+            this.outbox.BackColor = System.Drawing.Color.Black;
+            this.outbox.ContextMenuStrip = this.outmenu;
+            this.outbox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.outbox.ForeColor = System.Drawing.Color.Green;
+            this.outbox.Location = new System.Drawing.Point(3, 3);
+            this.outbox.Name = "outbox";
+            this.outbox.ReadOnly = true;
+            this.outbox.Size = new System.Drawing.Size(707, 303);
+            this.outbox.TabIndex = 1;
+            this.outbox.Text = "";
+            // 
+            // outmenu
+            // 
+            this.outmenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.clearToolStripMenuItem});
+            this.outmenu.Name = "outmenu";
+            this.outmenu.Size = new System.Drawing.Size(102, 26);
+            // 
+            // clearToolStripMenuItem
+            // 
+            this.clearToolStripMenuItem.Name = "clearToolStripMenuItem";
+            this.clearToolStripMenuItem.Size = new System.Drawing.Size(101, 22);
+            this.clearToolStripMenuItem.Text = "Clear";
+            this.clearToolStripMenuItem.Click += new System.EventHandler(this.ClearToolStripMenuItemClick);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.debugbox);
@@ -150,21 +184,10 @@
             this.tabPage2.Text = "DEBUG";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // outbox
-            // 
-            this.outbox.BackColor = System.Drawing.Color.Black;
-            this.outbox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.outbox.ForeColor = System.Drawing.Color.Green;
-            this.outbox.Location = new System.Drawing.Point(3, 3);
-            this.outbox.Name = "outbox";
-            this.outbox.ReadOnly = true;
-            this.outbox.Size = new System.Drawing.Size(707, 303);
-            this.outbox.TabIndex = 1;
-            this.outbox.Text = "";
-            // 
             // debugbox
             // 
             this.debugbox.BackColor = System.Drawing.Color.Black;
+            this.debugbox.ContextMenuStrip = this.outmenu;
             this.debugbox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.debugbox.ForeColor = System.Drawing.Color.Green;
             this.debugbox.Location = new System.Drawing.Point(3, 3);
@@ -182,9 +205,9 @@
             this.Controls.Add(this.outtab);
             this.Controls.Add(this.button6);
             this.Controls.Add(this.button5);
-            this.Controls.Add(this.button2);
-            this.Controls.Add(this.button4);
-            this.Controls.Add(this.button3);
+            this.Controls.Add(this.getfusebtn);
+            this.Controls.Add(this.getbadblocksbtn);
+            this.Controls.Add(this.getlaunchinibtn);
             this.Controls.Add(this.getkeybtn);
             this.Controls.Add(this.statusStrip1);
             this.Name = "MainForm";
@@ -193,6 +216,7 @@
             this.statusStrip1.PerformLayout();
             this.outtab.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
+            this.outmenu.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -204,9 +228,9 @@
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel dllversionlbl;
         private System.Windows.Forms.Button getkeybtn;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button getfusebtn;
+        private System.Windows.Forms.Button getlaunchinibtn;
+        private System.Windows.Forms.Button getbadblocksbtn;
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.TabControl outtab;
@@ -214,6 +238,8 @@
         private System.Windows.Forms.RichTextBox outbox;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.RichTextBox debugbox;
+        private System.Windows.Forms.ContextMenuStrip outmenu;
+        private System.Windows.Forms.ToolStripMenuItem clearToolStripMenuItem;
 
     }
 }
