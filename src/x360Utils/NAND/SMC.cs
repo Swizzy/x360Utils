@@ -42,6 +42,29 @@ namespace x360Utils.NAND {
                                  smcdata[0x101], smcdata[0x102]);
         }
 
+        public string GetMotherBoardFromVersion(ref byte[] smcdata) {
+            DecryptCheck(ref smcdata);
+            switch ((smcdata[0x100] & 0xF0) >> 0x4)
+            {
+                case 1:
+                    return "Xenon";
+                case 2:
+                    return "Zephyr";
+                case 3:
+                    return "Falcon/Opus";
+                case 4:
+                    return "Jasper";
+                case 5:
+                    return "Trinity";
+                case 6:
+                    return "Corona";
+                //case 7:
+                //    return "Winchester";
+                default:
+                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "The version doesn't match any known motherboard version... :(");
+            }
+        }
+
         public SMCTypes GetType(ref byte[] smcdata) {
             var ret = SMCTypes.Unkown;
             var glitchPatched = false;
@@ -52,7 +75,8 @@ namespace x360Utils.NAND {
                         if ((smcdata[i + 2] == 0xE5) && (smcdata[i + 4] == 0xB4) && (smcdata[i + 5] == 0x05)) {
                             retail = true;
                             glitchPatched = false; // Not properly glitch patched...
-                            Debug.SendDebug("Found Retail bytes @ 0x{0:X}\n", i);
+                            if (Main.VerifyVerbosityLevel(1))
+                                Main.SendInfo("Found Retail bytes @ 0x{0:X}\n", i);
                         }
                         break;
                     case 0x00:
@@ -60,20 +84,23 @@ namespace x360Utils.NAND {
                         if ((smcdata[i + 1] == 0x00) && (smcdata[i + 2] == 0xE5) && (smcdata[i + 4] == 0xB4) &&
                             (smcdata[i + 5] == 0x05)) {
                             glitchPatched = true;
-                            Debug.SendDebug("Found Glitch bytes @ 0x{0:X}\n", i);
+                            if (Main.VerifyVerbosityLevel(1))
+                                Main.SendInfo("Found Glitch bytes @ 0x{0:X}\n", i);
                         }
                         break;
                     case 0x78:
                         /* Cygnos */
                         if ((smcdata[i + 1] == 0xBA) && (smcdata[i + 2] == 0xB6)) {
                             ret = SMCTypes.Cygnos;
-                            Debug.SendDebug("Found Cygnos bytes @ 0x{0:X}\n", i);
+                            if (Main.VerifyVerbosityLevel(1))
+                                Main.SendInfo("Found Cygnos bytes @ 0x{0:X}\n", i);
                         }
                         break;
                     case 0xD0:
                         /* JTAG */
                         if ((smcdata[i + 1] == 0x00) && (smcdata[i + 2] == 0x00) && (smcdata[i + 3] == 0x1B)) {
-                            Debug.SendDebug("Found JTAG bytes @ 0x{0:X}\n", i);
+                            if (Main.VerifyVerbosityLevel(1))
+                                Main.SendInfo("Found JTAG bytes @ 0x{0:X}\n", i);
                             ret = SMCTypes.Jtag;
                         }
                         break;
@@ -82,10 +109,12 @@ namespace x360Utils.NAND {
             if (glitchPatched && !retail) {
                 switch (ret) {
                     case SMCTypes.Jtag:
-                        Debug.SendDebug("Image has both Glitch and JTAG patches\n");
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("Image has both Glitch and JTAG patches\n");
                         return SMCTypes.RJtag;
                     case SMCTypes.Cygnos:
-                        Debug.SendDebug("Image has both Glitch and Cygnos patches\n");
+                        if (Main.VerifyVerbosityLevel(1)) 
+                            Main.SendInfo("Image has both Glitch and Cygnos patches\n");
                         return SMCTypes.RJtagCygnos;
                     default:
                         return SMCTypes.Glitch;
@@ -103,7 +132,8 @@ namespace x360Utils.NAND {
                 smcdata[i] = 0x00;
                 smcdata[i + 1] = 0x00;
                 patched = true;
-                Debug.SendDebug("SMC Patched @ offset: 0x{0:X}\n", i);
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("SMC Patched @ offset: 0x{0:X}\n", i);
             }
             return patched;
         }
@@ -116,7 +146,8 @@ namespace x360Utils.NAND {
                 if (smcdata[i + 2] != 0xE5 || smcdata[i + 4] != 0xB4 || smcdata[i + 5] != 0x05)
                     continue;
                 if (smcdata[i] == 0x00 && smcdata[i + 1] == 0x00) {
-                    Debug.SendDebug("Glitch patch found @ offset: 0x{0:X}\n", i);
+                    if (Main.VerifyVerbosityLevel(1))
+                        Main.SendInfo("Glitch patch found @ offset: 0x{0:X}\n", i);
                     patched = true;
                 }
                 found = true;
@@ -133,7 +164,8 @@ namespace x360Utils.NAND {
                     continue;
                 if (smcdata[i + 1] != smcdata[i + 9] || smcdata[i + 2] != 0x74 || smcdata[i + 4] != 0xD5 || smcdata[i + 5] != 0xE0 || smcdata[i + 6] != 0xFD || smcdata[i + 7] != 0x22 || smcdata[i + 8] != 0xC2)
                     continue;
-                Debug.SendDebug("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
                 return smcdata[i + 1];
             }
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
@@ -147,8 +179,8 @@ namespace x360Utils.NAND {
                         if (smcdata[i] != 0x92 || smcdata[i + 4] != 0xDF || smcdata[i + 5] != 0xF8 ||
                             smcdata[i + 6] != 0x22)
                             continue;
-                        Debug.SendDebug("TDI0 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i,
-                                        (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("TDI0 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]); 
                         return smcdata[i + 1];
                     }
                     break;
@@ -157,8 +189,8 @@ namespace x360Utils.NAND {
                         if (smcdata[i] != 0xC2 || smcdata[i + 2] != 0x74 || smcdata[i + 3] != 0x02 ||
                             smcdata[i + 8] != 0x74 || smcdata[i + 8] != 0x02)
                             continue;
-                        Debug.SendDebug("TDI1 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i,
-                                        (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("TDI1 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
                         return smcdata[i + 1];
                     }
                     break;
@@ -167,8 +199,8 @@ namespace x360Utils.NAND {
                         if (smcdata[i] != 0x7F || smcdata[i + 1] != 0x01 || smcdata[i + 4] != 0xC2 ||
                             smcdata[i + 6] != 0x74 || smcdata[i + 7] != 0x01)
                             continue;
-                        Debug.SendDebug("TDI2 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i,
-                                        (TMSTDIValues) smcdata[i + 5], smcdata[i + 5]);
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("TDI2 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 5], smcdata[i + 5]);
                         return smcdata[i + 5];
                     }
                     break;
@@ -177,8 +209,8 @@ namespace x360Utils.NAND {
                         if (smcdata[i] != 0x76 || smcdata[i + 2] != 0x78 || smcdata[i + 4] != 0x76 ||
                             smcdata[i + 6] != 0xD2)
                             continue;
-                        Debug.SendDebug("TDI3 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i,
-                                        (TMSTDIValues) smcdata[i + 7], smcdata[i + 7]);
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("TDI3 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 7], smcdata[i + 7]);
                         return smcdata[i + 7];
                     }
                     break;
@@ -199,7 +231,8 @@ namespace x360Utils.NAND {
                 smcdata[i + 1] = tms;
                 smcdata[i + 9] = tms;
                 patched = true;
-                Debug.SendDebug("TMS Patched @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) tms, tms);
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("TMS Patched @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)tms, tms);
             }
             return patched;
         }
@@ -209,7 +242,7 @@ namespace x360Utils.NAND {
             var patched = false;
             switch (num) {
                 case -1:
-                    Debug.SendDebug("Patching TDI in all 4 places...\n");
+                    Main.SendInfo("Patching TDI in all 4 places...\n");
                     var ret = false;
                     for(var i = 0; i < 4; i++)
                         if(SetTDI(ref smcdata, tdi, i))
@@ -222,8 +255,8 @@ namespace x360Utils.NAND {
                             continue;
                         smcdata[i + 1] = tdi;
                         patched = true;
-                        Debug.SendDebug("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num,
-                                        (TMSTDIValues) tdi, tdi);
+                        if (Main.VerifyVerbosityLevel(1)) 
+                            Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
                     }
                     break;
                 case 1:
@@ -233,8 +266,8 @@ namespace x360Utils.NAND {
                             continue;
                         smcdata[i + 1] = tdi;
                         patched = true;
-                        Debug.SendDebug("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num,
-                                        (TMSTDIValues) tdi, tdi);
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
                     }
                     break;
                 case 2:
@@ -244,8 +277,8 @@ namespace x360Utils.NAND {
                             continue;
                         smcdata[i + 1] = tdi;
                         patched = true;
-                        Debug.SendDebug("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num,
-                                        (TMSTDIValues) tdi, tdi);
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
                     }
                     break;
                 case 3:
@@ -255,8 +288,8 @@ namespace x360Utils.NAND {
                             continue;
                         smcdata[i + 1] = tdi;
                         patched = true;
-                        Debug.SendDebug("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num,
-                                        (TMSTDIValues) tdi, tdi);
+                        if (Main.VerifyVerbosityLevel(1))
+                            Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
                     }
                     break;
                 default:

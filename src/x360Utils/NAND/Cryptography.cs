@@ -89,12 +89,10 @@ namespace x360Utils.NAND {
             var type = BitOperations.Swap(BitConverter.ToUInt16(data, 6));
             if (Enum.IsDefined(typeof (BLEncryptionTypes), type))
                 return (BLEncryptionTypes) type;
-            throw new NotSupportedException(string.Format("This encryption type is not supported yet... Value: {0:X4}",
-                                                          type));
+            throw new NotSupportedException(string.Format("This encryption type is not supported yet... Value: {0:X4}", type));
         }
 
-        public void DecryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type,
-                                        out byte[] outkey) {
+        public void DecryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
             if (inkey == null) {
@@ -147,8 +145,7 @@ namespace x360Utils.NAND {
             Buffer.BlockCopy(decrypted, 0x0, data, 0x20, decrypted.Length);
         }
 
-        public void EncryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type,
-                                        out byte[] outkey) {
+        public void EncryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
             if (inkey == null) {

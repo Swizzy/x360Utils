@@ -44,7 +44,8 @@ namespace x360Utils.NAND {
             var calculatedCheckSum = CalculateSMCCheckSum(smcconfigdata);
             if (checkSum == calculatedCheckSum)
                 return;
-            Debug.SendDebug("ERROR: SMC_Config Checksums don't match! Expected: {0:X4} Calculated: {1:X4}", checkSum, calculatedCheckSum);
+            if (Main.VerifyVerbosityLevel(1))
+                Main.SendInfo("ERROR: SMC_Config Checksums don't match! Expected: {0:X4} Calculated: {1:X4}", checkSum, calculatedCheckSum);
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadChecksum);
         }
 

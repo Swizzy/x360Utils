@@ -40,8 +40,8 @@
                     if(BlockIDFromSpare(ref tmp, MetaType.MetaType2) == 1)
                         return MetaType.MetaType2;
             }
-            else
-                Debug.SendDebug(firsttry ? "Block 1 is bad!" : "The last system block is bad!");
+            else if (Main.VerifyVerbosityLevel(1))
+                Main.SendInfo(firsttry ? "Block 1 is bad!" : "The last system block is bad!");
             if(firsttry)
                 return DetectSpareType(reader, false);
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownMetaType);

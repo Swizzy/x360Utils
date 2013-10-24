@@ -217,7 +217,7 @@
                     var data = _x360NAND.GetSMC(reader, true);
                     var smc = new SMC();
                     var type = smc.GetType(ref data);
-                    AddOutput(string.Format("SMC Version: {0}", smc.GetVersion(ref data)));
+                    AddOutput(string.Format("SMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data)));
                     AddOutput(string.Format("\r\nSMC Type: {0}", type));
                     if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag) {
                         try {
