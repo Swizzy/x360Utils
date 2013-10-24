@@ -221,7 +221,7 @@
                     AddOutput(string.Format("\r\nSMC Type: {0}", type));
                     if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag) {
                         try {
-                            AddOutput(string.Format("\r\nTMS Patch: {0}", (SMC.TMSTDIValues)smc.JTAGPatches.GetTMS(ref data)));
+                            AddOutput(string.Format("\r\nTMS Patch: {0}", (SMC.TMSTDIValues)SMC.JTAGSMCPatches.GetTMS(ref data)));
                         }
                         catch (X360UtilsException ex)
                         {
@@ -230,7 +230,7 @@
                         }
                         for(var i = 0; i < 4; i++) {
                             try {
-                                AddOutput(string.Format("\r\nTDI{1} Patch: {0}", (SMC.TMSTDIValues)smc.JTAGPatches.GetTDI(ref data, i), i));
+                                AddOutput(string.Format("\r\nTDI{1} Patch: {0}", (SMC.TMSTDIValues)SMC.JTAGSMCPatches.GetTDI(ref data, i), i));
                             }
                             catch(X360UtilsException ex) {
                                 if(ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound)
