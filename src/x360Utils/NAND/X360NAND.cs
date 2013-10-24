@@ -236,7 +236,6 @@
                 for(;i < tmp.Length; i++) {
                     if(tmp[i] != 0x6C)
                         continue;
-                    Debug.SendDebug("0x6C found @ 0x{0:X}", reader.Position + i);
                     if(tmp.Length - i < 0x1C) {
                         Debug.SendDebug("Buffer is to small! expanding it...");
                         var tmp2 = reader.ReadBytes(0x23);
@@ -246,7 +245,8 @@
                     }
                     if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 || tmp[i + 8] != tmp[i + 3] || tmp[i + 9] != tmp[i + 7])
                         continue;
-                    Debug.SendDebug("Found launch.ini @ 0x{0:X}!", reader.Position + i);
+                    if (Main.VerifyVerbosityLevel(1))
+                        Main.SendInfo("Found launch.ini @ 0x{0:X}!", reader.Position + i);
                     reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
                     var data = reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
                     return Encoding.ASCII.GetString(data);
