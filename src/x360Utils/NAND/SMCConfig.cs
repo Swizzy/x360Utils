@@ -11,7 +11,7 @@ namespace x360Utils.NAND {
     using System.Text;
     using System.Text.RegularExpressions;
 
-    public class SMCConfig {
+    public sealed class SMCConfig {
         #region SMCConfigFans enum
 
         public enum SMCConfigFans {

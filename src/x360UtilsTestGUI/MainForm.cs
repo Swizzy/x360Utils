@@ -17,7 +17,12 @@
             dllversionlbl.Text = Main.Version;
             var version = Assembly.GetAssembly(typeof(MainForm)).GetName().Version;
             Debug.DebugOutput += DebugOnDebugOutput;
+            Main.InfoOutput += MainOnInfoOutput;
             Text = string.Format(Text, version.Major, version.Minor, version.Build);
+        }
+
+        private void MainOnInfoOutput(object sender, EventArg<string> eventArg) {
+            AddOutput(eventArg.Data);
         }
 
         private void DebugOnDebugOutput(object sender, EventArg<string> eventArg) {
@@ -162,6 +167,9 @@
                     else
                         AddOutput("No BadBlocks Found!\r\n");
                 }
+                catch(NotSupportedException) {
+                    AddOutput("Not Supported for this image type!");
+                }
             }
             AddOutput(Environment.NewLine);
             AddDone();
@@ -218,27 +226,10 @@
                     var data = _x360NAND.GetSMC(reader, true);
                     var smc = new SMC();
                     var type = smc.GetType(ref data);
-                    AddOutput(string.Format("SMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data)));
+                    AddOutput(string.Format("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data)));
                     AddOutput(string.Format("\r\nSMC Type: {0}", type));
-                    if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag) {
-                        try {
-                            AddOutput(string.Format("\r\nTMS Patch: {0}", (SMC.TMSTDIValues)SMC.JTAGSMCPatches.GetTMS(ref data)));
-                        }
-                        catch (X360UtilsException ex)
-                        {
-                            if (ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound)
-                                AddOutput("\r\nTMS Patch: Not Found!");
-                        }
-                        for(var i = 0; i < 4; i++) {
-                            try {
-                                AddOutput(string.Format("\r\nTDI{1} Patch: {0}", (SMC.TMSTDIValues)SMC.JTAGSMCPatches.GetTDI(ref data, i), i));
-                            }
-                            catch(X360UtilsException ex) {
-                                if(ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound)
-                                    AddOutput(string.Format("\r\nTDI{0} Patch: Not Found!", i));
-                            }
-                        }
-                    }
+                    if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag)
+                        SMC.JTAGSMCPatches.AnalyseSMC(ref data);
                     AddOutput(string.Format("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes": "No"));
                 }
                 catch (X360UtilsException ex)

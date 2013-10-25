@@ -25,6 +25,7 @@ namespace x360Utils.NAND {
         #region TMSTDIValues enum
 
         public enum TMSTDIValues : byte {
+            None = 0x00,
             ArgonData = 0x83,
             DB1F1 = 0xC0,
             AudClamp = 0xCC,
@@ -160,6 +161,104 @@ namespace x360Utils.NAND {
         }
 
         public sealed class JTAGSMCPatches {
+            public static void AnalyseSMC(ref byte[] smcdata, bool verbose = false) {
+                Main.SendInfo("\r\nDMA Read Hack: {0}", FindDMAReadHack(ref smcdata) ? "Yes" : "No");
+                Main.SendInfo("\r\nGPU JTAG Hack: {0}", FindGPUJtagHack(ref smcdata) ? "Yes" : "No");
+                Main.SendInfo("\r\nPCI Mask Bug: {0}", FindAndFixPCIMaskBug(ref smcdata) ? "Yes (Fixed if data is saved)" : "No");
+                Main.SendInfo("\r\nPlay 'n' Charge Patch: {0}", FindPNCCharge(ref smcdata) ? "Yes" : "No");
+                Main.SendInfo("\r\nPlay 'n' Charge when off Disabled: {0}", FindPNCNoCharge(ref smcdata) ? "Yes" : "No");
+                Main.SendInfo("\r\nUnconditional Boot Patch: {0}", FindUnconditionalBoot(ref smcdata) ? "Yes" : "No");
+                TMSTDIValues tms = TMSTDIValues.None, tdi = TMSTDIValues.None;
+                try {
+                    tms = (TMSTDIValues)GetTMS(ref smcdata);
+                    if (verbose)
+                        Main.SendInfo("\r\nTMS Patch: {0}", tms);
+                }
+                catch (X360UtilsException ex)
+                {
+                    if (ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound && verbose)
+                         Main.SendInfo("\r\nTMS Patch: Not Found!");
+                    else if (verbose)
+                        throw;
+                }
+                for (var i = 0; i < 4; i++)
+                {
+                    try {
+                        if(tdi == TMSTDIValues.None) {
+                            tdi = (TMSTDIValues) GetTDI(ref smcdata, i);
+                            if (verbose)
+                                Main.SendInfo("\r\nTDI{1} Patch: {0}", tdi, i);
+                        }
+                        else if (verbose)
+                            Main.SendInfo("\r\nTDI{1} Patch: {0}", (TMSTDIValues) GetTDI(ref smcdata, i), i);
+                    }
+                    catch (X360UtilsException ex)
+                    {
+                        if (ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound && verbose)
+                             Main.SendInfo("\r\nTDI{0} Patch: Not Found!", i);
+                        else if(verbose)
+                            throw;
+                    }
+                }
+                Debug.SendDebug("TMS: {0} TDI: {1}", tms, tdi);
+                switch(tms) {
+                        case TMSTDIValues.None:
+                        if (tdi == TMSTDIValues.DB1F1)
+                            Main.SendInfo("\r\nTMS & TDI Matches Xenon \"Normal\" Patchset");
+                        else {
+                            Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
+                            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
+                        }
+                        break;
+                    case TMSTDIValues.ArgonData:
+                        if (tdi == TMSTDIValues.DB1F1)
+                            Main.SendInfo("\r\n TMS & TDI Matches Zephyr, Falcon & Jasper \"Normal\" Patchset");
+                        else
+                        {
+                            Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
+                            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
+                        }
+                        break;
+                    case TMSTDIValues.DB1F1:
+                        Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
+                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
+                    case TMSTDIValues.AudClamp:
+                        switch(tdi) {
+                            case TMSTDIValues.DB1F1:
+                                Main.SendInfo("\r\n TMS & TDI Matches Zephyr, Falcon & Jasper \"Aud_Clamp\" Patchset");
+                                break;
+                            case TMSTDIValues.TrayOpen:
+                                Main.SendInfo("\r\n TMS & TDI Matches Zephyr, Falcon & Jasper \"Aud_Clamp + Eject\" Patchset");
+                                break;
+                            default:
+                                Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
+                                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
+                        }
+                        break;
+                    case TMSTDIValues.TrayOpen:
+                        Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
+                        throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
+                    default:
+                        Main.SendInfo("\r\nUnknown TMS value: {0:X2}", tms);
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            private static bool FindUnconditionalBoot(ref byte[] smcdata) {
+                DecryptCheck(ref smcdata);
+                for (var i = 0; i < smcdata.Length - 7; i++)
+                {
+                    if (smcdata[i] != 0xC0)
+                        continue;
+                    if (smcdata[i + 1] != 0x07 || smcdata[i + 2] != 0x00 || smcdata[i + 3] != 0xE5 || smcdata[i + 4] != 0x3D || smcdata[i + 5] != 0xB4 || smcdata[i + 6] != 0x82)
+                        continue;
+                    if (Main.VerifyVerbosityLevel(1))
+                        Main.SendInfo("Unconditional boot patch found @ 0x{0:X}", i);
+                    return true;
+                }
+                return false;
+            }
+
             public static byte GetTMS(ref byte[] smcdata)
             {
                 DecryptCheck(ref smcdata);
@@ -247,7 +346,7 @@ namespace x360Utils.NAND {
                 return false;
             }
 
-            public static bool FindGPUJtag(ref byte[] smcdata)
+            public static bool FindGPUJtagHack(ref byte[] smcdata)
             {
                 DecryptCheck(ref smcdata);
                 for (var i = 0; i < smcdata.Length - 6; i++)
