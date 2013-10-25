@@ -8,6 +8,8 @@ using x360Utils.Common;
 
 namespace x360Utils.NAND {
     using System.Collections.Generic;
+    using System.Text;
+    using System.Text.RegularExpressions;
 
     public class SMCConfig {
         #region SMCConfigFans enum
@@ -86,6 +88,57 @@ namespace x360Utils.NAND {
         public string GetMACAdress(ref byte[] smcconfigdata) {
             return string.Format("{0:X2}:{1:X2}:{2:X2}:{3:X2}:{4:X2}:{5:X2}", smcconfigdata[0x220], smcconfigdata[0x221],
                                  smcconfigdata[0x222], smcconfigdata[0x223], smcconfigdata[0x224], smcconfigdata[0x225]);
+        }
+
+        private static string TranslateResetCode(char code) {
+            switch(code) {
+                case 'A':
+                case 'a':
+                case 'X':
+                case 'x':
+                case 'Y':
+                case 'y':
+                    return string.Format("{0} Button", code.ToString().ToUpper());
+                case 'D':
+                case 'd':
+                    return "D-PAD Down";
+                case 'U':
+                case 'u':
+                    return "D-PAD Up";
+                case 'L':
+                case 'l':
+                    return "D-PAD Left";
+                case 'R':
+                case 'r':
+                    return "D-PAD Right";
+                default:
+                    throw new ArgumentOutOfRangeException("code", "The reset code is invalid!");
+            }
+        }
+
+        private static IEnumerable<char> GetResetCodeArray(string codeline) {
+            if (VerifyResetCodeLine(codeline))
+                return codeline.ToCharArray();
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataInvalid);
+        }
+
+        private static bool VerifyResetCodeLine(string codeline) {
+            return Regex.IsMatch(codeline, "[AXYDULRaxydulr]{4}");
+        }
+
+        public string GetResetCode(ref byte[] smcconfigdata, bool translate = false) {
+            var codeline = Encoding.ASCII.GetString(smcconfigdata, 0x238, 4);
+            if(!translate) {
+                if (VerifyResetCodeLine(codeline))
+                    return codeline;
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataInvalid);
+            }
+            var ret = "";
+            foreach (var code in GetResetCodeArray(codeline)) {
+                ret += TranslateResetCode(code);
+                ret += ", ";
+            }
+            return ret.Substring(0, ret.Length - 2);
         }
     }
 }

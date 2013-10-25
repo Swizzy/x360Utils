@@ -191,7 +191,8 @@
                     AddOutput(string.Format("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPUMax)));
                     AddOutput(string.Format("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAM)));
                     AddOutput(string.Format("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAMMax)));
-                    AddOutput(string.Format("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg)));                    
+                    AddOutput(string.Format("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg)));
+                    AddOutput(string.Format("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg)));
                 }
                 catch (X360UtilsException ex)
                 {
