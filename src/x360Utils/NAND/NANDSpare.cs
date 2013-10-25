@@ -6,6 +6,7 @@
         #region MetaType enum
 
         public enum MetaType {
+            MetaTypeUnInitialized = int.MinValue, // Really old JTAG XeLL images
             MetaType0 = 0, // Pre Jasper (0x01198010)
             MetaType1 = 1, // Jasper, Trinity & Corona (0x00023010 [Jasper & Trinity] and 0x00043000 [Corona])
             MetaType2 = 2, // BigBlock Jasper (0x008A3020 and 0x00AA3020)
@@ -22,6 +23,8 @@
             else
                 reader.RawSeek(reader.RawLength - 0x4000, SeekOrigin.Begin);
             var tmp = reader.RawReadBytes(0x10);
+            if (!CheckIsBadBlockSpare(ref tmp, MetaType.MetaTypeUnInitialized))
+                return MetaType.MetaTypeUnInitialized;
             if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType0)) {
                 if(BlockIDFromSpare(ref tmp, MetaType.MetaType0) == 1)
                     return MetaType.MetaType0;
@@ -54,6 +57,8 @@
                     return spareData[5] != 0xFF;
                 case MetaType.MetaType2:
                     return spareData[0] != 0xFF;
+                case MetaType.MetaTypeUnInitialized:
+                    return (Common.BitOperations.CountByteInstances(ref spareData, 0xFF) != spareData.Length);
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }
@@ -66,6 +71,8 @@
                     return blockData[0x205] != 0xFF;
                 case MetaType.MetaType2:
                     return blockData[0x200] != 0xFF;
+                case MetaType.MetaTypeUnInitialized:
+                    return (Common.BitOperations.CountByteInstances(ref blockData, 0xFF, 0x200, 0x10) != 0x10);
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }
@@ -80,6 +87,8 @@
                 case MetaType.MetaType1:
                 case MetaType.MetaType2:
                     return BitConverter.ToUInt16(spareData, 1);
+                case MetaType.MetaTypeUnInitialized:
+                    throw new NotSupportedException();
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }
@@ -94,6 +103,8 @@
                 case MetaType.MetaType2:
                 case MetaType.MetaType1:
                     return BitConverter.ToUInt16(blockData, 0x201);
+                case MetaType.MetaTypeUnInitialized:
+                    throw new NotSupportedException();
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }

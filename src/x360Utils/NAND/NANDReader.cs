@@ -16,12 +16,15 @@
             _binaryReader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
             if(!VerifyMagic())
                 throw new Exception("Bad Magic");
-            Main.SendInfo("Checking for spare...");
+            if (Main.VerifyVerbosityLevel(1))
+                Main.SendInfo("\r\nChecking for spare...");
             HasSpare = CheckForSpare();
             if(HasSpare) {
-                Main.SendInfo("Checking for MetaType...");
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("\r\nChecking for MetaType...");
                 MetaType = NANDSpare.DetectSpareType(this);
-                Main.SendInfo("MetaType: {0}", MetaType);
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("\r\nMetaType: {0}", MetaType);
                 //Main.SendInfo("Checking for bad blocks...");
                 //try {
                 //    FindBadBlocks();
@@ -161,7 +164,8 @@
         }
 
         private bool VerifyMagic() {
-            Main.SendInfo("Checking Magic bytes...");
+            if (Main.VerifyVerbosityLevel(1))
+                Main.SendInfo("\r\nChecking Magic bytes...");
             RawSeek(0, SeekOrigin.Begin);
             var tmp = _binaryReader.ReadBytes(2);
             Debug.SendDebug("Restoring position...");
@@ -188,7 +192,7 @@
         }
 
         public long[] FindBadBlocks(bool forceSB = false) {
-            if(!HasSpare)
+            if(!HasSpare || MetaType == NANDSpare.MetaType.MetaTypeUnInitialized)
                 throw new NotSupportedException();
             if(_forcedSB && !forceSB || !_forcedSB && forceSB)
                 _badBlocks.Clear();
@@ -201,7 +205,8 @@
             for(var block = 0; block < totalBlocks; block++) {
                 var spare = RawReadBytes(0x10);
                 if(NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType)) {
-                    Main.SendInfo("BadBlock Marker detected @ block 0x{0:X}", block);
+                    if (Main.VerifyVerbosityLevel(1))
+                        Main.SendInfo("\r\nBadBlock Marker detected @ block 0x{0:X}", block);
                     _badBlocks.Add(block);
                 }
                 RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSB ? 0x20FF0 : 0x41F0) : 0x41F0, SeekOrigin.Current);
