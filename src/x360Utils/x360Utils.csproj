@@ -61,6 +61,12 @@
     <Compile Include="NAND\SMC.cs" />
     <Compile Include="NAND\SMCConfig.cs" />
     <Compile Include="NAND\X360NAND.cs" />
+    <Compile Include="Network\WebClientWithTimeout.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Network\XeLL.cs" />
+    <Compile Include="Network\XeLLNetworkException.cs" />
+    <Compile Include="Network\XeLLNetworkScanner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="x360UtilsException.cs" />
   </ItemGroup>
@@ -70,7 +76,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties BuildVersion_BuildVersioningStyle="None.None.Increment.None" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_UpdateFileVersion="True" />
+      <UserProperties BuildVersion_UpdateFileVersion="True" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_BuildVersioningStyle="None.None.Increment.None" />
     </VisualStudio>
   </ProjectExtensions>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
