@@ -9,7 +9,7 @@
     public class XeLL {
         internal static void FuseDownloader(string ip)
         {
-            using (var client = new WebClientWithTimeout(1000))
+            using (var client = new WebClientWithTimeout())
             {
                 try
                 {
