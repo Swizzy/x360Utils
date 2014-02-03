@@ -37,10 +37,10 @@
             }
         }
 
-        private void AddOutput(string output) {
+        private void AddOutput(string output, params object[] args) {
             try {
                 if(!InvokeRequired) {
-                    outbox.AppendText(output);
+                    outbox.AppendText(string.Format(output, args));
                     outbox.Select(outbox.Text.Length, 0);
                     outbox.ScrollToCaret();
                 }
@@ -67,7 +67,7 @@
 
         private void AddDone() {
             _sw.Stop();
-            AddOutput(string.Format("Took: {0} Minutes {1} Seconds {2} Milliseconds\r\n", _sw.Elapsed.Minutes, _sw.Elapsed.Seconds, _sw.Elapsed.Milliseconds));
+            AddOutput("Took: {0} Minutes {1} Seconds {2} Milliseconds\r\n", _sw.Elapsed.Minutes, _sw.Elapsed.Seconds, _sw.Elapsed.Milliseconds);
         }
 
         private void GetKeyBtnClick(object sender, EventArgs e) {
@@ -128,7 +128,7 @@
             using(var reader = new NANDReader(e.Argument as string)) {
                 try {
                     AddOutput("Grabbing Launch.ini from NAND: ");
-                    AddOutput(string.Format("{0}{1}", Environment.NewLine, _x360NAND.GetLaunchIni(reader)));
+                    AddOutput("{0}{1}", Environment.NewLine, _x360NAND.GetLaunchIni(reader));
                 }
                 catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
@@ -155,7 +155,7 @@
                     AddOutput("Grabbing BadBlock info from NAND: ");
                     var blocks = reader.FindBadBlocks();
                     foreach(var block in blocks)
-                        AddOutput(string.Format("{1}BadBlock @ 0x{0:X}", block, Environment.NewLine));
+                        AddOutput("{1}BadBlock @ 0x{0:X}", block, Environment.NewLine);
                 }
                 catch(X360UtilsException ex) {
                     if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataNotFound) {
@@ -183,20 +183,20 @@
                     AddOutput("Grabbing SMC_Config from NAND: ");
                     var cfg = _x360NAND.GetSMCConfig(reader);
                     var config = new SMCConfig();
-                    AddOutput(string.Format("\r\nChecksum: {0}", config.GetCheckSum(ref cfg)));
-                    AddOutput(string.Format("\r\nDVDRegion: {0}", config.GetDVDRegion(ref cfg)));
-                    AddOutput(string.Format("\r\nCPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.CPU)));
-                    AddOutput(string.Format("\r\nGPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.GPU)));
-                    AddOutput(string.Format("\r\nGameRegion: {0}", config.GetGameRegion(ref cfg)));
-                    AddOutput(string.Format("\r\nMACAdress: {0}", config.GetMACAdress(ref cfg)));
-                    AddOutput(string.Format("\r\nCPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPU)));
-                    AddOutput(string.Format("\r\nCPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPUMax)));
-                    AddOutput(string.Format("\r\nGPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPU)));
-                    AddOutput(string.Format("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPUMax)));
-                    AddOutput(string.Format("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAM)));
-                    AddOutput(string.Format("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAMMax)));
-                    AddOutput(string.Format("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg)));
-                    AddOutput(string.Format("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg)));
+                    AddOutput("\r\nChecksum: {0}", config.GetCheckSum(ref cfg));
+                    AddOutput("\r\nDVDRegion: {0}", config.GetDVDRegion(ref cfg));
+                    AddOutput("\r\nCPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.CPU));
+                    AddOutput("\r\nGPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.GPU));
+                    AddOutput("\r\nGameRegion: {0}", config.GetGameRegion(ref cfg));
+                    AddOutput("\r\nMACAdress: {0}", config.GetMACAdress(ref cfg));
+                    AddOutput("\r\nCPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPU));
+                    AddOutput("\r\nCPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPUMax));
+                    AddOutput("\r\nGPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPU));
+                    AddOutput("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPUMax));
+                    AddOutput("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAM));
+                    AddOutput("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAMMax));
+                    AddOutput("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg));
+                    AddOutput("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg));
                 }
                 catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
@@ -218,11 +218,11 @@
                     var data = _x360NAND.GetSMC(reader, true);
                     var smc = new SMC();
                     var type = smc.GetType(ref data);
-                    AddOutput(string.Format("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data)));
-                    AddOutput(string.Format("\r\nSMC Type: {0}", type));
+                    AddOutput("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data));
+                    AddOutput("\r\nSMC Type: {0}", type);
                     if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag)
                         SMC.JTAGSMCPatches.AnalyseSMC(ref data);
-                    AddOutput(string.Format("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No"));
+                    AddOutput("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No");
                 }
                 catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
