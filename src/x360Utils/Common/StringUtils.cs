@@ -42,16 +42,11 @@ namespace x360Utils.Common {
 
         public static bool StringIsHex(string input) { return Regex.IsMatch(input, "^[0-9A-Fa-f]+$"); }
 
-        public static string StripNonHex(string input) {
-            var builder = new StringBuilder();
-            foreach(var c in input) {
-                if(StringIsHex(c.ToString(CultureInfo.InvariantCulture)))
-                    builder.Append(c);
-            }
-            return builder.ToString();
-        }
+        public static string StripNonHex(string input) { return Regex.Replace(input, "[^A-Fa-f0-9]", ""); }
 
-        public static string StripHexIdentifier(string input) { return input.Replace("0x", ""); }
+        public static string StripHexIdentifier(string input) { return Regex.Replace(input, "^0x", ""); }
+
+        public static bool IsIPv4(string input) { return Regex.IsMatch(input, "^([0-9]{1,3}\\.){3}[0-9]{1,3}$"); }
 
         public static string GetAciiString(ref byte[] data, int offset, int length, bool trim = false) { return trim ? Encoding.ASCII.GetString(data, offset, length).Trim() : Encoding.ASCII.GetString(data, offset, length); }
     }
