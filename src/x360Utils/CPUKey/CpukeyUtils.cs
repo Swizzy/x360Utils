@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.CPUKey {
+﻿namespace x360Utils.CPUKey {
     using System;
     using System.Globalization;
     using System.IO;
@@ -13,9 +7,7 @@ namespace x360Utils.CPUKey {
     public sealed class CpukeyUtils {
         private static Random _random = new Random((int) (DateTime.Now.Ticks & 0xFFFF));
 
-        public static void UpdateRandom(int seed) {
-            _random = new Random(seed);
-        }
+        public static void UpdateRandom(int seed) { _random = new Random(seed); }
 
         public byte[] GenerateRandomCPUKey() {
             var key = new byte[0x10];
@@ -81,7 +73,7 @@ namespace x360Utils.CPUKey {
         public bool ReadKeyfile(string file, out string cpukey) {
             cpukey = "";
             using(var sr = new StreamReader(file)) {
-                if (sr.BaseStream.Length > 0x5000)
+                if(sr.BaseStream.Length > 0x5000)
                     return false; // We don't want to read files that are HUGE!
                 var key = sr.ReadLine();
                 if(key != null && ((key.Trim().IndexOf("cpukey", StringComparison.CurrentCultureIgnoreCase) >= 0) && (key.Trim().Length == 38)))
@@ -105,7 +97,7 @@ namespace x360Utils.CPUKey {
             var val = "";
             UInt64 key1 = 0, key2 = 0, key3 = 0, key4 = 0;
             using(var sr = new StreamReader(file)) {
-                if (sr.BaseStream.Length > 0x5000)
+                if(sr.BaseStream.Length > 0x5000)
                     return false; // We don't want to read files that are HUGE!
                 while(val != null) {
                     val = sr.ReadLine();

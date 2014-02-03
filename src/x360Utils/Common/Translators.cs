@@ -1,13 +1,15 @@
 ﻿#region
 
-using System;
+
 
 #endregion
 
 namespace x360Utils.Common {
+    using System;
+
     public static class Translators {
         public static string TranslateVideoRegion(string videoregion) {
-            switch (videoregion) {
+            switch(videoregion) {
                 case "0x100":
                     return "NTSC-U (0x100)";
                 case "0x200":
@@ -21,16 +23,14 @@ namespace x360Utils.Common {
                 case "PAL (0x300)":
                     return "0x300";
                 default:
-                    return videoregion.StartsWith("Unkown", StringComparison.Ordinal)
-                               ? videoregion.Substring(8, videoregion.Length - 9)
-                               : string.Format("Unkown ({0})", videoregion);
+                    return videoregion.StartsWith("Unkown", StringComparison.Ordinal) ? videoregion.Substring(8, videoregion.Length - 9) : string.Format("Unkown ({0})", videoregion);
             }
         }
 
         public static string TranslateDVDRegion(string dvdregion) {
-            if (dvdregion.Trim().Length > 1)
+            if(dvdregion.Trim().Length > 1)
                 return dvdregion.Trim().Substring(0, 1);
-            switch (dvdregion) {
+            switch(dvdregion) {
                 case "1":
                     return "1 (North America)";
                 case "2":
@@ -51,7 +51,7 @@ namespace x360Utils.Common {
         }
 
         public static string TranslateGameRegion(string gameregion, bool includebytes = false) {
-            switch (gameregion) {
+            switch(gameregion) {
                 case "":
                 case null:
                 case "Unkown":

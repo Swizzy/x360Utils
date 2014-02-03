@@ -21,9 +21,7 @@
             Text = string.Format(Text, version.Major, version.Minor, version.Build);
         }
 
-        private void MainOnInfoOutput(object sender, EventArg<string> eventArg) {
-            AddOutput(eventArg.Data);
-        }
+        private void MainOnInfoOutput(object sender, EventArg<string> eventArg) { AddOutput(eventArg.Data); }
 
         private void DebugOnDebugOutput(object sender, EventArg<string> eventArg) {
             try {
@@ -143,7 +141,7 @@
 
         private void GetbadblocksbtnClick(object sender, EventArgs e) {
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
             bw.DoWork += GetBadblocks;
@@ -178,12 +176,10 @@
         private void GetsmcconfigbtnClick(object sender, EventArgs e) {
             _sw = Stopwatch.StartNew();
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            using (var reader = new NANDReader(ofd.FileName))
-            {
-                try
-                {
+            using(var reader = new NANDReader(ofd.FileName)) {
+                try {
                     AddOutput("Grabbing SMC_Config from NAND: ");
                     var cfg = _x360NAND.GetSMCConfig(reader);
                     var config = new SMCConfig();
@@ -202,8 +198,7 @@
                     AddOutput(string.Format("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg)));
                     AddOutput(string.Format("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg)));
                 }
-                catch (X360UtilsException ex)
-                {
+                catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
                     AddException(ex.ToString());
                 }
@@ -212,16 +207,13 @@
             AddDone();
         }
 
-        private void GetsmcbtnClick(object sender, EventArgs e)
-        {
+        private void GetsmcbtnClick(object sender, EventArgs e) {
             _sw = Stopwatch.StartNew();
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            using (var reader = new NANDReader(ofd.FileName))
-            {
-                try
-                {
+            using(var reader = new NANDReader(ofd.FileName)) {
+                try {
                     AddOutput("Grabbing SMC from NAND: ");
                     var data = _x360NAND.GetSMC(reader, true);
                     var smc = new SMC();
@@ -230,10 +222,9 @@
                     AddOutput(string.Format("\r\nSMC Type: {0}", type));
                     if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag)
                         SMC.JTAGSMCPatches.AnalyseSMC(ref data);
-                    AddOutput(string.Format("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes": "No"));
+                    AddOutput(string.Format("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No"));
                 }
-                catch (X360UtilsException ex)
-                {
+                catch(X360UtilsException ex) {
                     AddOutput("FAILED!");
                     AddException(ex.ToString());
                 }

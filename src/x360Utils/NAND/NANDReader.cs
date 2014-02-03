@@ -16,14 +16,14 @@
             _binaryReader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
             if(!VerifyMagic())
                 throw new Exception("Bad Magic");
-            if (Main.VerifyVerbosityLevel(1))
+            if(Main.VerifyVerbosityLevel(1))
                 Main.SendInfo("\r\nChecking for spare...");
             HasSpare = CheckForSpare();
             if(HasSpare) {
-                if (Main.VerifyVerbosityLevel(1))
+                if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nChecking for MetaType...");
                 MetaType = NANDSpare.DetectSpareType(this);
-                if (Main.VerifyVerbosityLevel(1))
+                if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nMetaType: {0}", MetaType);
                 //Main.SendInfo("Checking for bad blocks...");
                 //try {
@@ -65,9 +65,7 @@
             set { Seek(value, SeekOrigin.Begin); }
         }
 
-        public override void Flush() {
-            throw new NotSupportedException();
-        }
+        public override void Flush() { throw new NotSupportedException(); }
 
         public override long Seek(long offset, SeekOrigin origin) {
             offset = HasSpare ? ((offset / 0x200) * 0x210) + offset % 0x200 : offset;
@@ -78,9 +76,7 @@
             return ret;
         }
 
-        public override void SetLength(long value) {
-            throw new NotSupportedException();
-        }
+        public override void SetLength(long value) { throw new NotSupportedException(); }
 
         public override int Read(byte[] buffer, int index, int count) {
             Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
@@ -132,13 +128,9 @@
             return buffer;
         }
 
-        public override void Write(byte[] buffer, int offset, int count) {
-            throw new NotSupportedException();
-        }
+        public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
 
-        public new void Close() {
-            _binaryReader.Close();
-        }
+        public new void Close() { _binaryReader.Close(); }
 
         #endregion Overrides of Stream
 
@@ -164,7 +156,7 @@
         }
 
         private bool VerifyMagic() {
-            if (Main.VerifyVerbosityLevel(1))
+            if(Main.VerifyVerbosityLevel(1))
                 Main.SendInfo("\r\nChecking Magic bytes...");
             RawSeek(0, SeekOrigin.Begin);
             var tmp = _binaryReader.ReadBytes(2);
@@ -205,7 +197,7 @@
             for(var block = 0; block < totalBlocks; block++) {
                 var spare = RawReadBytes(0x10);
                 if(NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType)) {
-                    if (Main.VerifyVerbosityLevel(1))
+                    if(Main.VerifyVerbosityLevel(1))
                         Main.SendInfo("\r\nBadBlock Marker detected @ block 0x{0:X}", block);
                     _badBlocks.Add(block);
                 }

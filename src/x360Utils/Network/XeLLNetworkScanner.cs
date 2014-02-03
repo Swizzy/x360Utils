@@ -8,12 +8,11 @@
     using System.Text.RegularExpressions;
     using System.Threading;
 
-    internal sealed class XeLLNetworkScanner
-    {
-        private readonly List<IPAddress> _responselist = new List<IPAddress>();
-        private string _baseip;
-        public IPAddress XeLLIPAddress;
+    internal sealed class XeLLNetworkScanner {
         private readonly string _macAddress;
+        private readonly List<IPAddress> _responselist = new List<IPAddress>();
+        public IPAddress XeLLIPAddress;
+        private string _baseip;
 
         public XeLLNetworkScanner(string baseip, string macAddress) {
             _macAddress = macAddress;
@@ -43,14 +42,22 @@
                         continue;
                     ipfull = localIPs[i].ToString();
                     var split = ipfull.Split('.');
-                    if (_baseip.Equals(string.Format("{0}.{1}.{2}.", split[0], split[1], split[2])))
+                    if(_baseip.Equals(string.Format("{0}.{1}.{2}.", split[0], split[1], split[2])))
                         break;
                 }
                 Main.SendInfo("Scannning network for your console... Waiting for pings to complete...");
                 while((DateTime.Now - lastping).TotalMilliseconds < 500)
                     Thread.Sleep(100);
                 Main.SendInfo("Scannning network for your console... Looking for console response based on MAC Address...");
-                var proc = new Process { StartInfo = { FileName = "arp", Arguments = !string.IsNullOrEmpty(ipfull) ? "-a -N " + ipfull.Trim() : "-a", CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true } };
+                var proc = new Process {
+                    StartInfo = {
+                        FileName = "arp",
+                        Arguments = !string.IsNullOrEmpty(ipfull) ? "-a -N " + ipfull.Trim() : "-a",
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true
+                    }
+                };
                 proc.Start();
                 var output = proc.StandardOutput.ReadToEnd();
                 proc.WaitForExit();
@@ -110,7 +117,7 @@
             foreach(var s in _responselist) {
                 var p = new Ping();
                 var pingReply = p.Send(s, 500);
-                if (pingReply == null || pingReply.Status != IPStatus.Success)
+                if(pingReply == null || pingReply.Status != IPStatus.Success)
                     continue;
                 response++;
                 if(Failsaferesponse(s))

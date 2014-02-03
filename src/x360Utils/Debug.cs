@@ -1,16 +1,17 @@
 ﻿#region
 
-using System;
-using System.Diagnostics;
+
 
 #endregion
 
 namespace x360Utils {
+    using System;
+    using System.Diagnostics;
+
     public static class Debug {
         public static event EventHandler<EventArg<string>> DebugOutput;
 
-        [Conditional("PRINTDEBUG")] [Conditional("DEBUG")] 
-        internal static void SendDebug(string message, params object[] args) {
+        [Conditional("PRINTDEBUG")] [Conditional("DEBUG")] internal static void SendDebug(string message, params object[] args) {
             var dbg = DebugOutput;
             if(dbg == null || message == null)
                 return;

@@ -7,27 +7,20 @@
     using x360Utils.CPUKey;
 
     public class XeLL {
-        internal static void FuseDownloader(string ip)
-        {
-            using (var client = new WebClientWithTimeout())
-            {
-                try
-                {
+        internal static void FuseDownloader(string ip) {
+            using(var client = new WebClientWithTimeout()) {
+                try {
                     client.DownloadFile(string.Format("http://{0}/FUSE", ip), "FUSE.txt");
                 }
-                catch
-                {
-                    if (File.Exists("FUSE.txt"))
+                catch {
+                    if(File.Exists("FUSE.txt"))
                         File.Delete("FUSE.txt");
                     throw new XeLLNetworkException("FUSE Download FAILED!");
                 }
             }
         }
 
-        internal static void FuseDownloader(IPAddress ip)
-        {
-            FuseDownloader(ip.ToString());
-        }
+        internal static void FuseDownloader(IPAddress ip) { FuseDownloader(ip.ToString()); }
 
         public string GetKeyFromXeLL(string ip) {
             IPAddress ipcheck;

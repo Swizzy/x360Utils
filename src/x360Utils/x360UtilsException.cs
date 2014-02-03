@@ -1,10 +1,12 @@
 ﻿#region
 
-using System;
+
 
 #endregion
 
 namespace x360Utils {
+    using System;
+
     public sealed class X360UtilsException : Exception {
         #region X360UtilsErrors enum
 
@@ -26,7 +28,7 @@ namespace x360Utils {
             UnkownPatchset
         }
 
-        #endregion X360UtilsErrors enum
+        #endregion
 
         public readonly X360UtilsErrors ErrorCode;
 
@@ -37,8 +39,6 @@ namespace x360Utils {
             Message = message;
         }
 
-        public override string ToString() {
-            return string.Format("x360UtilsException!{0}ErrorCode: {1}{0}Message: {2}{0}StackTrace: {0}{3}", Environment.NewLine, ErrorCode, Message, StackTrace);
-        }
+        public override string ToString() { return string.Format("x360UtilsException!{0}ErrorCode: {1}{0}Message: {2}{0}StackTrace: {0}{3}", Environment.NewLine, ErrorCode, Message, StackTrace); }
     }
 }

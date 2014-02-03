@@ -1,6 +1,7 @@
 ﻿namespace x360Utils.NAND {
     using System;
     using System.IO;
+    using x360Utils.Common;
 
     public class NANDSpare {
         #region MetaType enum
@@ -23,7 +24,7 @@
             else
                 reader.RawSeek(reader.RawLength - 0x4000, SeekOrigin.Begin);
             var tmp = reader.RawReadBytes(0x10);
-            if (!CheckIsBadBlockSpare(ref tmp, MetaType.MetaTypeUnInitialized))
+            if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaTypeUnInitialized))
                 return MetaType.MetaTypeUnInitialized;
             if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType0)) {
                 if(BlockIDFromSpare(ref tmp, MetaType.MetaType0) == 1)
@@ -31,7 +32,7 @@
                 if(BlockIDFromSpare(ref tmp, MetaType.MetaType1) == 1)
                     return MetaType.MetaType1;
             }
-            if (!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
+            if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
                 if(firsttry)
                     reader.RawSeek(0x21200, SeekOrigin.Begin);
                 else if(reader.RawLength <= 0x4200000)
@@ -39,11 +40,12 @@
                 else
                     reader.RawSeek(0x4200000 - 0x4000, SeekOrigin.Begin);
                 tmp = reader.RawReadBytes(0x10);
-                if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2))
+                if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
                     if(BlockIDFromSpare(ref tmp, MetaType.MetaType2) == 1)
                         return MetaType.MetaType2;
+                }
             }
-            else if (Main.VerifyVerbosityLevel(1))
+            else if(Main.VerifyVerbosityLevel(1))
                 Main.SendInfo(firsttry ? "Block 1 is bad!" : "The last system block is bad!");
             if(firsttry)
                 return DetectSpareType(reader, false);
@@ -58,7 +60,7 @@
                 case MetaType.MetaType2:
                     return spareData[0] != 0xFF;
                 case MetaType.MetaTypeUnInitialized:
-                    return (Common.BitOperations.CountByteInstances(ref spareData, 0xFF) != spareData.Length);
+                    return (BitOperations.CountByteInstances(ref spareData, 0xFF) != spareData.Length);
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }
@@ -72,14 +74,14 @@
                 case MetaType.MetaType2:
                     return blockData[0x200] != 0xFF;
                 case MetaType.MetaTypeUnInitialized:
-                    return (Common.BitOperations.CountByteInstances(ref blockData, 0xFF, 0x200, 0x10) != 0x10);
+                    return (BitOperations.CountByteInstances(ref blockData, 0xFF, 0x200, 0x10) != 0x10);
                 default:
                     throw new ArgumentOutOfRangeException("metaType");
             }
         }
 
         public static int BlockIDFromSpare(ref byte[] spareData, MetaType metaType) {
-            if (CheckIsBadBlockSpare(ref spareData, metaType))
+            if(CheckIsBadBlockSpare(ref spareData, metaType))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
             switch(metaType) {
                 case MetaType.MetaType0:
@@ -95,7 +97,7 @@
         }
 
         public static int BlockIDFromBlock(ref byte[] blockData, MetaType metaType) {
-            if (CheckIsBadBlock(ref blockData, metaType))
+            if(CheckIsBadBlock(ref blockData, metaType))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
             switch(metaType) {
                 case MetaType.MetaType0:
@@ -125,7 +127,12 @@
                 val >>= 1;
             }
             val = ~val;
-            return new[] { (byte) (val << 6), (byte) ((val >> 2) & 0xFF), (byte) ((val >> 10) & 0xFF), (byte) ((val >> 18) & 0xFF) };
+            return new[] {
+                (byte) (val << 6),
+                (byte) ((val >> 2) & 0xFF),
+                (byte) ((val >> 10) & 0xFF),
+                (byte) ((val >> 18) & 0xFF)
+            };
         }
 
         internal static bool CheckPageECD(ref byte[] data, int offset) {
@@ -135,8 +142,6 @@
             return (calculated[0] == actual[0] && calculated[1] == actual[1] && calculated[2] == actual[2] && calculated[3] == actual[3]);
         }
 
-        internal static bool PageIsFS(ref byte[] data) {
-            return false;
-        }
+        internal static bool PageIsFS(ref byte[] data) { return false; }
     }
 }

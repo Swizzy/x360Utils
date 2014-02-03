@@ -3,13 +3,9 @@
     using System.Net;
 
     public sealed class WebClientWithTimeout : WebClient {
-        public WebClientWithTimeout() {
-            Timeout = 60000;
-        }
+        public WebClientWithTimeout() { Timeout = 60000; }
 
-        public WebClientWithTimeout(int timeout) {
-            Timeout = timeout;
-        }
+        public WebClientWithTimeout(int timeout) { Timeout = timeout; }
 
         public int Timeout { get; set; }
 

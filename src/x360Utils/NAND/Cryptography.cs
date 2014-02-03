@@ -1,12 +1,14 @@
 ﻿#region
 
-using System;
-using System.Security.Cryptography;
-using x360Utils.Common;
+
 
 #endregion
 
 namespace x360Utils.NAND {
+    using System;
+    using System.Security.Cryptography;
+    using x360Utils.Common;
+
     public sealed class Cryptography {
         #region BLEncryptionTypes enum
 
@@ -19,30 +21,43 @@ namespace x360Utils.NAND {
 
         #endregion
 
-        private static readonly byte[] BLKey = new byte[]
-                                                   {
-                                                       0xDD, 0x88, 0xAD, 0x0C, 0x9E, 0xD6, 0x69, 0xE7, 0xB5, 0x67, 0x94,
-                                                       0xFB, 0x68, 0x56, 0x3E, 0xFA
-                                                   };
+        private static readonly byte[] BLKey = new byte[] {
+            0xDD,
+            0x88,
+            0xAD,
+            0x0C,
+            0x9E,
+            0xD6,
+            0x69,
+            0xE7,
+            0xB5,
+            0x67,
+            0x94,
+            0xFB,
+            0x68,
+            0x56,
+            0x3E,
+            0xFA
+        };
 
         public static void Rc4(ref byte[] bytes, byte[] key) {
             var s = new byte[256];
             var k = new byte[256];
             byte temp;
             int i;
-            for (i = 0; i < 256; i++) {
+            for(i = 0; i < 256; i++) {
                 s[i] = (byte) i;
                 k[i] = key[i % key.GetLength(0)];
             }
             var j = 0;
-            for (i = 0; i < 256; i++) {
+            for(i = 0; i < 256; i++) {
                 j = (j + s[i] + k[i]) % 256;
                 temp = s[i];
                 s[i] = s[j];
                 s[j] = temp;
             }
             i = j = 0;
-            for (var x = 0; x < bytes.GetLength(0); x++) {
+            for(var x = 0; x < bytes.GetLength(0); x++) {
                 i = (i + 1) % 256;
                 j = (j + s[i]) % 256;
                 temp = s[i];
@@ -55,13 +70,16 @@ namespace x360Utils.NAND {
 
         #region SMC
 
-        public static bool VerifySMCDecrypted(ref byte[] data) {
-            return BitOperations.DataIsZero(ref data, data.Length - 4, 4);
-        }
+        public static bool VerifySMCDecrypted(ref byte[] data) { return BitOperations.DataIsZero(ref data, data.Length - 4, 4); }
 
         public void DecryptSMC(ref byte[] data) {
-            var key = new byte[] {0x42, 0x75, 0x4E, 0x79};
-            for (var i = 0; i < data.Length; i++) {
+            var key = new byte[] {
+                0x42,
+                0x75,
+                0x4E,
+                0x79
+            };
+            for(var i = 0; i < data.Length; i++) {
                 var num1 = data[i];
                 var num2 = num1 * 0xFB;
                 data[i] = Convert.ToByte(num1 ^ (key[i & 3] & 0xFF));
@@ -71,8 +89,13 @@ namespace x360Utils.NAND {
         }
 
         public void EncryptSMC(ref byte[] data) {
-            var key = new byte[] {0x42, 0x75, 0x4e, 0x79};
-            for (var i = 0; i < data.Length; i++) {
+            var key = new byte[] {
+                0x42,
+                0x75,
+                0x4e,
+                0x79
+            };
+            for(var i = 0; i < data.Length; i++) {
                 var num2 = data[i] ^ (key[i & 3] & 0xff);
                 var num3 = num2 * 0xFB;
                 data[i] = Convert.ToByte(num2);
@@ -87,7 +110,7 @@ namespace x360Utils.NAND {
 
         public BLEncryptionTypes GetBootloaderCryptoType(ref byte[] data) {
             var type = BitOperations.Swap(BitConverter.ToUInt16(data, 6));
-            if (Enum.IsDefined(typeof (BLEncryptionTypes), type))
+            if(Enum.IsDefined(typeof(BLEncryptionTypes), type))
                 return (BLEncryptionTypes) type;
             throw new NotSupportedException(string.Format("This encryption type is not supported yet... Value: {0:X4}", type));
         }
@@ -95,8 +118,8 @@ namespace x360Utils.NAND {
         public void DecryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
-            if (inkey == null) {
-                switch (type) {
+            if(inkey == null) {
+                switch(type) {
                     case BLEncryptionTypes.Default:
                     case BLEncryptionTypes.CBB:
                         inkey = BLKey;
@@ -108,14 +131,14 @@ namespace x360Utils.NAND {
                         throw new ArgumentNullException("inkey");
                 }
             }
-            if (inkey.Length != 0x10)
+            if(inkey.Length != 0x10)
                 throw new ArgumentOutOfRangeException("inkey");
 
             #endregion
 
             var header = new byte[0x10];
             Array.Copy(data, 0x10, header, 0x0, 0x10);
-            switch (type) {
+            switch(type) {
                 case BLEncryptionTypes.Default:
                     outkey = new HMACSHA1(inkey).ComputeHash(header);
                     break;
@@ -148,8 +171,8 @@ namespace x360Utils.NAND {
         public void EncryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
-            if (inkey == null) {
-                switch (type) {
+            if(inkey == null) {
+                switch(type) {
                     case BLEncryptionTypes.Default:
                     case BLEncryptionTypes.CBB:
                         inkey = BLKey;
@@ -161,14 +184,14 @@ namespace x360Utils.NAND {
                         throw new ArgumentNullException("inkey");
                 }
             }
-            if (inkey.Length != 0x10)
+            if(inkey.Length != 0x10)
                 throw new ArgumentOutOfRangeException("inkey");
 
             #endregion
 
             var header = new byte[0x10];
             Array.Copy(data, 0x10, header, 0x0, 0x10);
-            switch (type) {
+            switch(type) {
                 case BLEncryptionTypes.Default:
                     break;
                 case BLEncryptionTypes.CBB:
@@ -193,9 +216,9 @@ namespace x360Utils.NAND {
         public void DecryptBootloaderCF(ref byte[] data, ref byte[] inkey, out byte[] outkey) {
             #region Error Handling
 
-            if (inkey == null)
+            if(inkey == null)
                 inkey = BLKey;
-            if (inkey.Length != 0x10)
+            if(inkey.Length != 0x10)
                 throw new ArgumentOutOfRangeException("inkey");
 
             #endregion
@@ -212,30 +235,24 @@ namespace x360Utils.NAND {
             Buffer.BlockCopy(decrypted, 0x0, data, 0x30, decrypted.Length);
         }
 
-        public bool VerifyCBDecrypted(ref byte[] data) {
-            return BitOperations.DataIsZero(ref data, 0x270, 0x120);
-        }
+        public bool VerifyCBDecrypted(ref byte[] data) { return BitOperations.DataIsZero(ref data, 0x270, 0x120); }
 
-        public bool VerifyCFDecrypted(ref byte[] data) {
-            return BitOperations.DataIsZero(ref data, 0x1F0, 0x20);
-        }
+        public bool VerifyCFDecrypted(ref byte[] data) { return BitOperations.DataIsZero(ref data, 0x1F0, 0x20); }
 
         #endregion Bootloaders
 
         #region Keyvault
 
-        public void DecryptKV(ref byte[] data, string cpukey) {
-            DecryptKV(ref data, StringUtils.HexToArray(cpukey));
-        }
+        public void DecryptKV(ref byte[] data, string cpukey) { DecryptKV(ref data, StringUtils.HexToArray(cpukey)); }
 
         public void DecryptKV(ref byte[] data, byte[] cpukey) {
-            if (data.Length < 0x4000)
+            if(data.Length < 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
-            if (data.Length > 0x4000)
+            if(data.Length > 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooBig);
-            if (cpukey.Length < 0x10)
+            if(cpukey.Length < 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
-            if (cpukey.Length > 0x10)
+            if(cpukey.Length > 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooLong);
             var tmp = new byte[data.Length - 0x10];
             var header = new byte[0x10];
@@ -248,18 +265,16 @@ namespace x360Utils.NAND {
             Buffer.BlockCopy(tmp, 0x0, data, header.Length, tmp.Length);
         }
 
-        public bool VerifyKVDecrypted(ref byte[] data, string cpukey) {
-            return VerifyKVDecrypted(ref data, StringUtils.HexToArray(cpukey));
-        }
+        public bool VerifyKVDecrypted(ref byte[] data, string cpukey) { return VerifyKVDecrypted(ref data, StringUtils.HexToArray(cpukey)); }
 
         public bool VerifyKVDecrypted(ref byte[] data, byte[] cpukey) {
-            if (data.Length < 0x4000)
+            if(data.Length < 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
-            if (data.Length > 0x4000)
+            if(data.Length > 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooBig);
-            if (cpukey.Length < 0x10)
+            if(cpukey.Length < 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
-            if (cpukey.Length > 0x10)
+            if(cpukey.Length > 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooLong);
             byte[] header = new byte[0x10], tmp = new byte[0x4002 - 0x10];
             Array.Copy(data, 0x0, header, 0x0, 0x10);
@@ -268,8 +283,8 @@ namespace x360Utils.NAND {
             tmp[0x3FF1] = 0x12;
             var checkdata = new HMACSHA1(cpukey).ComputeHash(tmp);
             Array.Resize(ref checkdata, 0x10);
-            for (var i = 0; i < 0x10; i++) {
-                if (checkdata[i] != header[i])
+            for(var i = 0; i < 0x10; i++) {
+                if(checkdata[i] != header[i])
                     return false;
             }
             return true;
