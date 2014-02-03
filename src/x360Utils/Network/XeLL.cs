@@ -8,6 +8,8 @@
 
     public class XeLL {
         internal static void FuseDownloader(string ip) {
+            if (!Common.StringUtils.IsIPv4(ip))
+                throw new ArgumentException("Bad IP Input! (This function only supports IPv4)");
             using(var client = new WebClientWithTimeout()) {
                 try {
                     client.DownloadFile(string.Format("http://{0}/FUSE", ip), "FUSE.txt");
@@ -23,10 +25,9 @@
         internal static void FuseDownloader(IPAddress ip) { FuseDownloader(ip.ToString()); }
 
         public string GetKeyFromXeLL(string ip) {
-            IPAddress ipcheck;
-            if(!IPAddress.TryParse(ip, out ipcheck))
-                throw new ArgumentException("Bad IP Input!");
-            return GetKeyFromXeLL(ipcheck);
+            if(!Common.StringUtils.IsIPv4(ip))
+                throw new ArgumentException("Bad IP Input! (This function only supports IPv4)");
+            return GetKeyFromXeLL(IPAddress.Parse(ip));
         }
 
         public string GetKeyFromXeLL(IPAddress ipadrAddress) {
