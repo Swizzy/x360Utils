@@ -42,7 +42,7 @@ namespace x360Utils.Common {
 
         public static bool StringIsHex(string input) { return Regex.IsMatch(input, "^[0-9A-Fa-f]+$"); }
 
-        public static string StripNonHex(string input) { return Regex.Replace(input, "[^A-Fa-f0-9]", ""); }
+        public static string StripNonHex(string input) { return Regex.Replace(StripHexIdentifier(input), "[^A-Fa-f0-9]", ""); }
 
         public static string StripHexIdentifier(string input) { return Regex.Replace(input, "^0x", ""); }
 
