@@ -19,6 +19,7 @@
             Debug.DebugOutput += DebugOnDebugOutput;
             Main.InfoOutput += MainOnInfoOutput;
             Text = string.Format(Text, version.Major, version.Minor, version.Build);
+            Main.VerbosityLevel = int.MaxValue;
         }
 
         private void MainOnInfoOutput(object sender, EventArg<string> eventArg) { AddOutput(eventArg.Data); }
@@ -173,6 +174,11 @@
             AddDone();
         }
 
+        private static void TestMetaUtils(object sender, DoWorkEventArgs e) {
+            var spareUtils = new NANDSpare();
+            spareUtils.TestMetaUtils(e.Argument as string);
+        }
+
         private void GetsmcconfigbtnClick(object sender, EventArgs e) {
             _sw = Stopwatch.StartNew();
             var ofd = new OpenFileDialog();
@@ -231,6 +237,16 @@
             }
             AddOutput(Environment.NewLine);
             AddDone();
+        }
+
+        private void MetaUtilsClick(object sender, EventArgs e)
+        {
+            var ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() != DialogResult.OK)
+                return;
+            var bw = new BackgroundWorker();
+            bw.DoWork += TestMetaUtils;
+            bw.RunWorkerAsync(ofd.FileName);
         }
     }
 }

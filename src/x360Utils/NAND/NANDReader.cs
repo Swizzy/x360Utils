@@ -4,6 +4,7 @@
     using System.IO;
 
     public sealed class NANDReader : Stream {
+        readonly NANDSpare _spareUtils = new NANDSpare();
         public readonly bool HasSpare;
         public readonly NANDSpare.MetaType MetaType;
         private readonly List<long> _badBlocks = new List<long>();
@@ -22,9 +23,9 @@
             if(HasSpare) {
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nChecking for MetaType...");
-                MetaType = NANDSpare.DetectSpareType(this);
+                MetaType = _spareUtils.DetectSpareType(this);
                 if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("\r\nMetaType: {0}", MetaType);
+                    Main.SendInfo("\r\nMetaType: {0}\r\n", MetaType);
                 //Main.SendInfo("Checking for bad blocks...");
                 //try {
                 //    FindBadBlocks();
@@ -196,7 +197,7 @@
             var totalBlocks = Length / (MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSB ? 0x20000 : 0x4000) : 0x4000);
             for(var block = 0; block < totalBlocks; block++) {
                 var spare = RawReadBytes(0x10);
-                if(NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType)) {
+                if(_spareUtils.CheckIsBadBlockSpare(ref spare, MetaType)) {
                     if(Main.VerifyVerbosityLevel(1))
                         Main.SendInfo("\r\nBadBlock Marker detected @ block 0x{0:X}", block);
                     _badBlocks.Add(block);

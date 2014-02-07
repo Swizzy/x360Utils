@@ -44,6 +44,7 @@
             this.clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.debugbox = new System.Windows.Forms.RichTextBox();
+            this.MetaUtils = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -199,6 +200,16 @@
             this.debugbox.TabIndex = 2;
             this.debugbox.Text = "";
             // 
+            // MetaUtils
+            // 
+            this.MetaUtils.Location = new System.Drawing.Point(727, 100);
+            this.MetaUtils.Name = "MetaUtils";
+            this.MetaUtils.Size = new System.Drawing.Size(183, 23);
+            this.MetaUtils.TabIndex = 3;
+            this.MetaUtils.Text = "TestMetaUtils";
+            this.MetaUtils.UseVisualStyleBackColor = true;
+            this.MetaUtils.Click += new System.EventHandler(this.MetaUtilsClick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -208,6 +219,7 @@
             this.Controls.Add(this.getsmcbtn);
             this.Controls.Add(this.getsmcconfigbtn);
             this.Controls.Add(this.getfusebtn);
+            this.Controls.Add(this.MetaUtils);
             this.Controls.Add(this.getbadblocksbtn);
             this.Controls.Add(this.getlaunchinibtn);
             this.Controls.Add(this.getkeybtn);
@@ -242,6 +254,7 @@
         private System.Windows.Forms.RichTextBox debugbox;
         private System.Windows.Forms.ContextMenuStrip outmenu;
         private System.Windows.Forms.ToolStripMenuItem clearToolStripMenuItem;
+        private System.Windows.Forms.Button MetaUtils;
 
     }
 }
