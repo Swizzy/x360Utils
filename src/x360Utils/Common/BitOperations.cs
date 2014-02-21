@@ -1,10 +1,10 @@
 ﻿namespace x360Utils.Common {
     public static class BitOperations {
-        public static ulong Swap(ulong x) { return x << 56 | x << 40 & 0xff000000000000 | x << 24 & 0xff0000000000 | x << 8 & 0xff00000000 | x >> 8 & 0xff000000 | x >> 24 & 0xff0000 | x >> 40 & 0xff00 | x >> 56; }
+        public static ulong Swap(ulong x) { return x << 56 | x << 40 | x << 24 | x << 8 | x >> 8 | x >> 24 | x >> 40 | x >> 56; }
 
-        public static uint Swap(uint x) { return (x & 0x000000FF) << 24 | (x & 0x0000FF00) << 8 | (x & 0x00FF0000) >> 8 | (x & 0xFF000000) >> 24; }
+        public static uint Swap(uint x) { return x << 24 | x << 8 | x >> 8 | x >> 24; }
 
-        public static ushort Swap(ushort x) { return (ushort) ((0xFF00 & x) >> 8 | (0x00FF & x) << 8); }
+        public static ushort Swap(ushort x) { return (ushort) (x << 8 | x >> 8); }
 
         public static uint CountSetBits(ulong n) {
             uint c;
@@ -13,9 +13,10 @@
             return c;
         }
 
-        public static bool DataIsZero(ref byte[] data, int offset, int length) {
-            for(var i = 0; i < length; i++) {
-                if(data[offset + i] != 0x00)
+        public static bool DataIsZero(ref byte[] data, int offset = 0, int length = -1) {
+            length = length <= 0 ? data.Length - offset : offset + length;
+            for(; offset < length; offset++) {
+                if(data[offset] != 0x00)
                     return false;
             }
             return true;
@@ -30,7 +31,7 @@
             return count;
         }
 
-        public static int CountByteInstances(ref byte[] data, byte instance, int offset, int length = 0) {
+        public static int CountByteInstances(ref byte[] data, byte instance, int offset = 0, int length = -1) {
             var count = 0;
             length = length <= 0 ? data.Length - offset : offset + length;
             for(; offset < length; offset++) {

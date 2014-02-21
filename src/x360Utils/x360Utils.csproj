@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="Common\BitOperations.cs" />
     <Compile Include="Common\Translators.cs" />
+    <Compile Include="CPUKey\FUSE.cs" />
     <Compile Include="EventArg.cs" />
     <Compile Include="Debug.cs" />
     <Compile Include="Common\StringUtils.cs" />

@@ -1,6 +1,5 @@
 ﻿namespace x360Utils.CPUKey {
     using System;
-    using System.Globalization;
     using System.IO;
     using x360Utils.Common;
 
@@ -46,28 +45,28 @@
             }
         }
 
-        public void VerifyCpuKey(string cpukey) {
+        public static void VerifyCpuKey(string cpukey) {
             cpukey = cpukey.Trim();
             var tmp = StringUtils.HexToArray(cpukey);
             VerifyCpuKey(ref tmp);
         }
 
-        public void VerifyCpuKey(ref byte[] cpukey) {
+        public static void VerifyCpuKey(ref byte[] cpukey) {
             if(cpukey.Length < 0x10)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
             if(cpukey.Length > 0x10)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooLong);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooLongKey);
             var tmp = BitConverter.ToUInt64(cpukey, 0);
             var hamming = BitOperations.CountSetBits(tmp);
             tmp = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8));
             hamming += BitOperations.CountSetBits(tmp & 0xFFFFFFFFFF030000);
             if(hamming != 53)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyInvalidHamming);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
             var key2 = new byte[0x10];
             Buffer.BlockCopy(cpukey, 0, key2, 0, cpukey.Length);
             CalculateCPUKeyECD(ref key2);
             if(!BitOperations.CompareByteArrays(ref cpukey, ref key2))
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyInvalidECD);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyECD);
         }
 
         public bool ReadKeyfile(string file, out string cpukey) {
@@ -92,57 +91,27 @@
         }
 
         public bool ReadFusefile(string file, out string cpukey, out int ldv) {
-            ldv = 0;
+            var fuse = new FUSE(file);
+            ldv = fuse.CFLDV;
             cpukey = "";
-            var val = "";
-            UInt64 key1 = 0, key2 = 0, key3 = 0, key4 = 0;
-            using(var sr = new StreamReader(file)) {
-                if(sr.BaseStream.Length > 0x5000)
-                    return false; // We don't want to read files that are HUGE!
-                while(val != null) {
-                    val = sr.ReadLine();
-                    if(string.IsNullOrEmpty(val))
-                        continue;
-                    if(val.StartsWith("fuseset 03:", StringComparison.CurrentCultureIgnoreCase))
-                        UInt64.TryParse(val.Remove(0, 11), NumberStyles.HexNumber, null, out key1);
-                    else if(val.StartsWith("fuseset 04:", StringComparison.CurrentCultureIgnoreCase))
-                        UInt64.TryParse(val.Remove(0, 11), NumberStyles.HexNumber, null, out key2);
-                    else if(val.StartsWith("fuseset 05:", StringComparison.CurrentCultureIgnoreCase))
-                        UInt64.TryParse(val.Remove(0, 11), NumberStyles.HexNumber, null, out key3);
-                    else if(val.StartsWith("fuseset 06:", StringComparison.CurrentCultureIgnoreCase))
-                        UInt64.TryParse(val.Remove(0, 11), NumberStyles.HexNumber, null, out key4);
-                    else if(val.StartsWith("fuseset 07:", StringComparison.Ordinal)) {
-                        foreach(var c in val.Remove(0, 11)) {
-                            if(c.ToString(CultureInfo.InvariantCulture).Equals("f", StringComparison.CurrentCultureIgnoreCase))
-                                ldv++;
-                        }
-                    }
-                    else if(val.StartsWith("fuseset 08:", StringComparison.Ordinal)) {
-                        foreach(var c in val.Remove(0, 11)) {
-                            if(c.ToString(CultureInfo.InvariantCulture).Equals("f", StringComparison.CurrentCultureIgnoreCase))
-                                ldv++;
-                        }
-                    }
-                }
-                sr.Close();
-            }
-            if(key1 == 0 || key2 == 0 || key3 == 0 || key4 == 0)
-                return false;
-            cpukey = (key1 | key2).ToString("X16") + (key3 | key4).ToString("X16");
             try {
+                cpukey = fuse.CPUKey;
                 VerifyCpuKey(cpukey);
                 return true;
             }
-            catch(X360UtilsException) {
-                return false;
+            catch(X360UtilsException ex) {
+                if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.NoValidKeyFound)
+                    throw; // Dafuq?
+                return false; // Key not found...
             }
         }
+
 
         public string GetCPUKeyFromTextFile(string file) {
             string cpukey;
             int ldv;
             if(!ReadKeyfile(file, out cpukey) && !ReadFusefile(file, out cpukey, out ldv))
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyFileNoKeyFound);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.NoValidKeyFound);
             return cpukey;
         }
     }

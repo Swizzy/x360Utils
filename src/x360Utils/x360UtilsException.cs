@@ -11,11 +11,11 @@ namespace x360Utils {
         #region X360UtilsErrors enum
 
         public enum X360UtilsErrors {
-            KeyTooShort,
-            KeyTooLong,
-            KeyInvalidHamming,
-            KeyInvalidECD,
-            KeyFileNoKeyFound,
+            TooShortKey,
+            TooLongKey,
+            InvalidKeyHamming,
+            InvalidKeyECD,
+            NoValidKeyFound,
             DataTooSmall,
             DataTooBig,
             DataNotFound,
@@ -34,7 +34,7 @@ namespace x360Utils {
 
         public new readonly string Message;
 
-        public X360UtilsException(X360UtilsErrors errorCode, string message = "") {
+        internal X360UtilsException(X360UtilsErrors errorCode, string message = "") {
             ErrorCode = errorCode;
             Message = message;
         }

@@ -251,9 +251,9 @@ namespace x360Utils.NAND {
             if(data.Length > 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooBig);
             if(cpukey.Length < 0x10)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
             if(cpukey.Length > 0x10)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooLong);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooLongKey);
             var tmp = new byte[data.Length - 0x10];
             var header = new byte[0x10];
             Array.Copy(data, 0x0, header, 0x0, 0x10);
@@ -273,9 +273,9 @@ namespace x360Utils.NAND {
             if(data.Length > 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooBig);
             if(cpukey.Length < 0x10)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooShort);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
             if(cpukey.Length > 0x10)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.KeyTooLong);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooLongKey);
             byte[] header = new byte[0x10], tmp = new byte[0x4002 - 0x10];
             Array.Copy(data, 0x0, header, 0x0, 0x10);
             Buffer.BlockCopy(data, 0x10, tmp, 0x0, 0x4000 - 0x10);

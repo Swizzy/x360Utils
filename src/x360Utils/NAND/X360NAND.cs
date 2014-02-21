@@ -175,11 +175,10 @@
 
         private static bool GetByteKey(NANDReader reader, int offset, out byte[] key) {
             Debug.SendDebug("Grabbing Byte Key @ 0x{0:X}", offset);
-            var keyutils = new CpukeyUtils();
             reader.Seek(offset, SeekOrigin.Begin);
             key = reader.ReadBytes(0x10);
             try {
-                keyutils.VerifyCpuKey(ref key);
+                CpukeyUtils.VerifyCpuKey(ref key);
                 return true;
             }
             catch(X360UtilsException ex) {
@@ -191,13 +190,12 @@
         private static bool GetASCIIKey(NANDReader reader, int offset, out string key) {
             Debug.SendDebug("Grabbing ASCII Key @ 0x{0:X}", offset);
             key = null;
-            var keyutils = new CpukeyUtils();
             reader.Seek(offset, SeekOrigin.Begin);
             var tmp = reader.ReadBytes(0x10);
             try {
                 key = Encoding.ASCII.GetString(tmp);
                 try {
-                    keyutils.VerifyCpuKey(key);
+                    CpukeyUtils.VerifyCpuKey(key);
                     return true;
                 }
                 catch(X360UtilsException ex) {
