@@ -95,8 +95,40 @@
             get { return FUSELines[1] == 0x0F0F0F0F0F0F0F0F; }
         }
 
-        public bool FactoryBurnt {
-            get { return FUSELines[1] == 0xC0FFFFFFFFFFFFFF; }
+        public bool Unlocked {
+            get { return (FUSELines[0] >> 62) == 0xC; }
+        }
+
+        public bool UsesEeprom {
+            get { return ((FUSELines[0] >> 60) & 0xC) == 0xC; }
+        }
+
+        public bool Secure {
+            get { return ((FUSELines[0] >> 58) & 0xC) == 0xC; }
+        }
+
+        public bool Invalid {
+            get { return ((FUSELines[0] >> 56) & 0xC) == 0xC; }
+        }
+
+        public bool ReservedOk {
+            get { return ((FUSELines[0] & 0xFFFFFFFFFFFFFF) == 0xFFFFFFFFFFFFFF); }
+        }
+
+        public UInt64 EepromKey1 {
+            get { return FUSELines[8]; }
+        }
+
+        public UInt64 EepromKey2 {
+            get { return FUSELines[9]; }
+        }
+
+        public UInt64 EepromHash1 {
+            get { return FUSELines[10]; }
+        }
+
+        public UInt64 EepromHash2 {
+            get { return FUSELines[11]; }
         }
     }
 }
