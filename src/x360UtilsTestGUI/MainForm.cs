@@ -5,6 +5,7 @@
     using System.Reflection;
     using System.Windows.Forms;
     using x360Utils;
+    using x360Utils.CPUKey;
     using x360Utils.NAND;
     using Debug = x360Utils.Debug;
 
@@ -239,14 +240,113 @@
             AddDone();
         }
 
-        private void MetaUtilsClick(object sender, EventArgs e)
-        {
+        private void MetaUtilsClick(object sender, EventArgs e) {
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
             bw.DoWork += TestMetaUtils;
             bw.RunWorkerAsync(ofd.FileName);
+        }
+
+        private void TestFusebtnClick(object sender, EventArgs e) {
+            var ofd = new OpenFileDialog();
+            if(ofd.ShowDialog() != DialogResult.OK)
+                return;
+            PrintFuseInfo(new FUSE(ofd.FileName));
+        }
+
+        private void PrintFuseInfo(FUSE info) {
+            outbox.Clear();
+            outbox.AppendText(string.Format("CPUKey                 : {0}{1}", info.CPUKey, Environment.NewLine));
+            outbox.AppendText(string.Format("CF LDV                 : {0}{1}", info.CFLDV, Environment.NewLine));
+            outbox.AppendText(string.Format("CB LDV                 : {0}{1}", info.CBLDV, Environment.NewLine));
+            if(info.FatRetail)
+                outbox.AppendText(string.Format("Dashboard Compatibility: {0}{1}", TranslateCBLDVFat(info.CBLDV), Environment.NewLine));
+            else if(info.SlimRetail)
+                outbox.AppendText(string.Format("Dashboard Compatibility: {0}{1}", TranslateCBLDVSlim(info.CBLDV), Environment.NewLine));
+            outbox.AppendText(string.Format("FUSE Type              : {0}{1}", GetFuseType(info), Environment.NewLine));
+            outbox.AppendText(string.Format("Unlocked               : {0}{1}", info.Unlocked ? "Yes" : "No", Environment.NewLine));
+            outbox.AppendText(string.Format("Uses Eeprom            : {0}{1}", info.UsesEeprom ? "Yes" : "No", Environment.NewLine));
+            if(info.UsesEeprom) {
+                outbox.AppendText(string.Format("EepromKey1             : {0:X16}{1}", info.EepromKey1, Environment.NewLine));
+                outbox.AppendText(string.Format("EepromKey2             : {0:X16}{1}", info.EepromKey2, Environment.NewLine));
+                outbox.AppendText(string.Format("EepromHash1            : {0:X16}{1}", info.EepromHash1, Environment.NewLine));
+                outbox.AppendText(string.Format("EepromHash2            : {0:X16}{1}", info.EepromHash2, Environment.NewLine));
+            }
+            outbox.AppendText(string.Format("Secure                 : {0}{1}", info.Secure ? "Yes" : "No", Environment.NewLine));
+            outbox.AppendText(string.Format("Not Valid Flag         : {0}{1}", info.Invalid ? "Yes" : "No", Environment.NewLine));
+            outbox.AppendText(string.Format("Reserved OK            : {0}{1}", info.ReservedOk ? "Yes" : "No", Environment.NewLine));
+            outbox.AppendText(string.Format("Original fusesets:{0}", Environment.NewLine));
+            for(var i = 0; i < info.FUSELines.Length; i++)
+                outbox.AppendText(string.Format("fuseset {0:D2}: {1:X16}{2}", i, info.FUSELines[i], Environment.NewLine));
+        }
+
+        private string TranslateCBLDVFat(int cbldv) {
+            switch(cbldv) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    return "Dashboards 1888 -> 7371 Are compatible";
+                case 5:
+                case 6:
+                    return "Dashboard 8498 -> 14699 Are compatible";
+                    //case 7:
+                case 8:
+                case 9:
+                    return "Dashboards 14717 & 14719 are compatible";
+                case 10:
+                case 11:
+                    return "Dashboard 15572 & later is compatible";
+                    //case 12:
+                    //case 13:
+                    //case 14:
+                    //case 15:
+                    //case 16:
+                default:
+                    return "Unknown";
+            }
+        }
+
+        private string TranslateCBLDVSlim(int cbldv) {
+            switch(cbldv) {
+                case 0:
+                case 1:
+                    return ("Dashboard 14699 is compatible");
+                case 2:
+                    return "Dashboards 14717 & 14719 are compatible";
+                case 3:
+                    return "Dashboard 15572 & later is compatible";
+                    //case 4:
+                    //case 5:
+                    //case 6:
+                    //case 7:
+                    //case 8:
+                    //case 9:
+                    //case 10:
+                    //case 11:
+                    //case 12:
+                    //case 13:
+                    //case 14:
+                    //case 15:
+                    //case 16:
+                default:
+                    return "Unknown";
+            }
+        }
+
+        private string GetFuseType(FUSE info) {
+            if(info.FatRetail)
+                return "Fat Retail";
+            if(info.SlimRetail)
+                return "Slim Retail";
+            if(info.Devkit)
+                return "Devkit";
+            if(info.Testkit)
+                return "Testkit";
+            return "Unknown";
         }
     }
 }

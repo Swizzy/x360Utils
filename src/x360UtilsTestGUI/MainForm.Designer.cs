@@ -45,6 +45,7 @@
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.debugbox = new System.Windows.Forms.RichTextBox();
             this.MetaUtils = new System.Windows.Forms.Button();
+            this.testFUSEbtn = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -154,6 +155,7 @@
             this.outbox.BackColor = System.Drawing.Color.Black;
             this.outbox.ContextMenuStrip = this.outmenu;
             this.outbox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.outbox.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.outbox.ForeColor = System.Drawing.Color.Green;
             this.outbox.Location = new System.Drawing.Point(3, 3);
             this.outbox.Name = "outbox";
@@ -210,6 +212,16 @@
             this.MetaUtils.UseVisualStyleBackColor = true;
             this.MetaUtils.Click += new System.EventHandler(this.MetaUtilsClick);
             // 
+            // testFUSEbtn
+            // 
+            this.testFUSEbtn.Location = new System.Drawing.Point(916, 100);
+            this.testFUSEbtn.Name = "testFUSEbtn";
+            this.testFUSEbtn.Size = new System.Drawing.Size(183, 23);
+            this.testFUSEbtn.TabIndex = 3;
+            this.testFUSEbtn.Text = "Test FUSE";
+            this.testFUSEbtn.UseVisualStyleBackColor = true;
+            this.testFUSEbtn.Click += new System.EventHandler(this.TestFusebtnClick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -219,6 +231,7 @@
             this.Controls.Add(this.getsmcbtn);
             this.Controls.Add(this.getsmcconfigbtn);
             this.Controls.Add(this.getfusebtn);
+            this.Controls.Add(this.testFUSEbtn);
             this.Controls.Add(this.MetaUtils);
             this.Controls.Add(this.getbadblocksbtn);
             this.Controls.Add(this.getlaunchinibtn);
@@ -255,6 +268,7 @@
         private System.Windows.Forms.ContextMenuStrip outmenu;
         private System.Windows.Forms.ToolStripMenuItem clearToolStripMenuItem;
         private System.Windows.Forms.Button MetaUtils;
+        private System.Windows.Forms.Button testFUSEbtn;
 
     }
 }
