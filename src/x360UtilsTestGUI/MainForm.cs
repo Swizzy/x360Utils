@@ -284,23 +284,22 @@
 
         private string TranslateCBLDVFat(int cbldv) {
             switch(cbldv) {
-                case 0:
                 case 1:
                 case 2:
                 case 3:
                 case 4:
-                    return "Dashboards 1888 -> 7371 Are compatible";
                 case 5:
+                    return "Dashboards 1888 -> 7371 Are compatible";
                 case 6:
+                case 7:
                     return "Dashboard 8498 -> 14699 Are compatible";
-                    //case 7:
-                case 8:
+                //case 8:
                 case 9:
-                    return "Dashboards 14717 & 14719 are compatible";
                 case 10:
+                    return "Dashboards 14717 & 14719 are compatible";
                 case 11:
+                case 12:
                     return "Dashboard 15572 & later is compatible";
-                    //case 12:
                     //case 13:
                     //case 14:
                     //case 15:
@@ -312,14 +311,13 @@
 
         private string TranslateCBLDVSlim(int cbldv) {
             switch(cbldv) {
-                case 0:
                 case 1:
-                    return ("Dashboard 14699 is compatible");
                 case 2:
-                    return "Dashboards 14717 & 14719 are compatible";
+                    return ("Dashboard 14699 is compatible");
                 case 3:
+                    return "Dashboards 14717 & 14719 are compatible";
+                case 4:
                     return "Dashboard 15572 & later is compatible";
-                    //case 4:
                     //case 5:
                     //case 6:
                     //case 7:

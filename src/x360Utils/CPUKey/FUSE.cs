@@ -44,7 +44,7 @@
         public int CBLDV {
             get {
                 var tmp = FUSELines[2].ToString("X16").LastIndexOf("F", StringComparison.Ordinal);
-                return tmp > 0 ? tmp : 0;
+                return tmp >= 0 ? tmp + 1 : 0;
             }
         }
 
