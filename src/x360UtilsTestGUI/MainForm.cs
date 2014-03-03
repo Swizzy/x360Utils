@@ -76,15 +76,15 @@
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            using(var reader = new NANDReader(ofd.FileName)) {
-                try {
+            try {
+                using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing CPUKey from NAND: ");
                     AddOutput(_x360NAND.GetNANDCPUKey(reader));
                 }
-                catch(X360UtilsException ex) {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
+            }
+            catch(X360UtilsException ex) {
+                AddOutput("FAILED!");
+                AddException(ex.ToString());
             }
             AddOutput(Environment.NewLine);
         }
@@ -93,16 +93,16 @@
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            using(var reader = new NANDReader(ofd.FileName)) {
-                try {
+            try {
+                using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing FUSES from NAND: ");
                     AddOutput(Environment.NewLine);
                     AddOutput(_x360NAND.GetVirtualFuses(reader));
                 }
-                catch(X360UtilsException ex) {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
+            }
+            catch(X360UtilsException ex) {
+                AddOutput("FAILED!");
+                AddException(ex.ToString());
             }
             AddOutput(Environment.NewLine);
         }
@@ -127,15 +127,15 @@
 
         private void Getlaunchini(object sender, DoWorkEventArgs e) {
             _sw = Stopwatch.StartNew();
-            using(var reader = new NANDReader(e.Argument as string)) {
-                try {
+            try {
+                using(var reader = new NANDReader(e.Argument as string)) {
                     AddOutput("Grabbing Launch.ini from NAND: ");
                     AddOutput("{0}{1}", Environment.NewLine, _x360NAND.GetLaunchIni(reader));
                 }
-                catch(X360UtilsException ex) {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
+            }
+            catch(X360UtilsException ex) {
+                AddOutput("FAILED!");
+                AddException(ex.ToString());
             }
             AddOutput(Environment.NewLine);
             AddDone();
@@ -152,32 +152,38 @@
 
         private void GetBadblocks(object sender, DoWorkEventArgs e) {
             _sw = Stopwatch.StartNew();
-            using(var reader = new NANDReader(e.Argument as string)) {
-                try {
+            try {
+                using(var reader = new NANDReader(e.Argument as string)) {
                     AddOutput("Grabbing BadBlock info from NAND: ");
                     var blocks = reader.FindBadBlocks();
                     foreach(var block in blocks)
                         AddOutput("{1}BadBlock @ 0x{0:X}", block, Environment.NewLine);
                 }
-                catch(X360UtilsException ex) {
-                    if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataNotFound) {
-                        AddOutput("FAILED!\r\n");
-                        AddException(ex.ToString());
-                    }
-                    else
-                        AddOutput("No BadBlocks Found!\r\n");
+            }
+            catch(X360UtilsException ex) {
+                if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataNotFound) {
+                    AddOutput("FAILED!\r\n");
+                    AddException(ex.ToString());
                 }
-                catch(NotSupportedException) {
-                    AddOutput("Not Supported for this image type!");
-                }
+                else
+                    AddOutput("No BadBlocks Found!\r\n");
+            }
+            catch(NotSupportedException) {
+                AddOutput("Not Supported for this image type!");
             }
             AddOutput(Environment.NewLine);
             AddDone();
         }
 
-        private static void TestMetaUtils(object sender, DoWorkEventArgs e) {
-            var spareUtils = new NANDSpare();
-            spareUtils.TestMetaUtils(e.Argument as string);
+        private void TestMetaUtils(object sender, DoWorkEventArgs e) {
+            try {
+                var spareUtils = new NANDSpare();
+                spareUtils.TestMetaUtils(e.Argument as string);
+            }
+            catch(X360UtilsException ex) {
+                AddOutput("FAILED!");
+                AddException(ex.ToString());
+            }
         }
 
         private void GetsmcconfigbtnClick(object sender, EventArgs e) {
@@ -185,8 +191,8 @@
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            using(var reader = new NANDReader(ofd.FileName)) {
-                try {
+            try {
+                using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing SMC_Config from NAND: ");
                     var cfg = _x360NAND.GetSMCConfig(reader);
                     var config = new SMCConfig();
@@ -205,10 +211,10 @@
                     AddOutput("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg));
                     AddOutput("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg));
                 }
-                catch(X360UtilsException ex) {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
+            }
+            catch(X360UtilsException ex) {
+                AddOutput("FAILED!");
+                AddException(ex.ToString());
             }
             AddOutput(Environment.NewLine);
             AddDone();
@@ -219,8 +225,8 @@
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            using(var reader = new NANDReader(ofd.FileName)) {
-                try {
+            try {
+                using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing SMC from NAND: ");
                     var data = _x360NAND.GetSMC(reader, true);
                     var smc = new SMC();
@@ -231,10 +237,10 @@
                         SMC.JTAGSMCPatches.AnalyseSMC(ref data);
                     AddOutput("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No");
                 }
-                catch(X360UtilsException ex) {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
+            }
+            catch(X360UtilsException ex) {
+                AddOutput("FAILED!");
+                AddException(ex.ToString());
             }
             AddOutput(Environment.NewLine);
             AddDone();
@@ -282,7 +288,7 @@
                 outbox.AppendText(string.Format("fuseset {0:D2}: {1:X16}{2}", i, info.FUSELines[i], Environment.NewLine));
         }
 
-        private string TranslateCBLDVFat(int cbldv) {
+        private static string TranslateCBLDVFat(int cbldv) {
             switch(cbldv) {
                 case 1:
                 case 2:
@@ -293,7 +299,7 @@
                 case 6:
                 case 7:
                     return "Dashboard 8498 -> 14699 Are compatible";
-                //case 8:
+                    //case 8:
                 case 9:
                 case 10:
                     return "Dashboards 14717 & 14719 are compatible";
@@ -309,7 +315,7 @@
             }
         }
 
-        private string TranslateCBLDVSlim(int cbldv) {
+        private static string TranslateCBLDVSlim(int cbldv) {
             switch(cbldv) {
                 case 1:
                 case 2:
@@ -335,7 +341,7 @@
             }
         }
 
-        private string GetFuseType(FUSE info) {
+        private static string GetFuseType(FUSE info) {
             if(info.FatRetail)
                 return "Fat Retail";
             if(info.SlimRetail)
