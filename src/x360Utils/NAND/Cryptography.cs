@@ -8,6 +8,7 @@ namespace x360Utils.NAND {
     using System;
     using System.Security.Cryptography;
     using x360Utils.Common;
+    using System.IO;
 
     public sealed class Cryptography {
         #region BLEncryptionTypes enum
@@ -291,5 +292,42 @@ namespace x360Utils.NAND {
         }
 
         #endregion Keyvault
+        
+        #region FCRT
+
+        public bool VerifyFCRTDecrypted(ref byte[] data) {
+            if (data.Length < 0x140)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
+            using (var sha1 = new SHA1Managed()) {
+                var hash = new byte[20];
+                Buffer.BlockCopy(data, 0x12C, hash, 0, hash.Length);
+                var hash2 = sha1.ComputeHash(data);
+                return BitOperations.CompareByteArrays(ref hash, ref hash2);
+            }
+        }
+
+        public byte[] DecryptFCRT(ref byte[] data, byte[] cpukey) {
+            if (data.Length < 0x120)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
+            var offset = BitOperations.Swap(BitConverter.ToUInt32(data, 0x11C));
+            var length = BitOperations.Swap(BitConverter.ToUInt32(data, 0x118));
+            var iv = new byte[0x10];
+            Buffer.BlockCopy(data, 0x100, iv, 0, iv.Length);
+            if (data.Length < offset + length)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataInvalid);
+            var buf = new byte[length];
+            Buffer.BlockCopy(data, (int)offset, buf, 0, buf.Length);
+            using (var aes = new RijndaelManaged()) {
+                aes.Mode = CipherMode.CBC;
+                aes.BlockSize = 128;
+                aes.Key = cpukey;
+                aes.IV = iv;
+                using (var ms = new MemoryStream(data)) 
+                    using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))                    
+                        return new BinaryReader(cs).ReadBytes((int)cs.Length);
+            }
+        }
+
+        #endregion
     }
 }
