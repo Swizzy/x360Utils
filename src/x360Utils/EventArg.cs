@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils {
+﻿namespace x360Utils {
     using System;
 
     public sealed class EventArg<T> : EventArgs {
