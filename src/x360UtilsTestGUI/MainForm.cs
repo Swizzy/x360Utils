@@ -352,5 +352,58 @@
                 return "Testkit";
             return "Unknown";
         }
+
+        internal class Args
+        {
+            internal string arg1;
+            internal string arg2;
+        }
+
+
+        private void button1_Click(object sender, EventArgs e) {
+            _sw = Stopwatch.StartNew();
+            var ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() != DialogResult.OK)
+                return;
+            var args = new Args();
+            args.arg1 = ofd.FileName;
+            ofd.FileName = "cpukey.txt";
+            if (ofd.ShowDialog() != DialogResult.OK)
+                return;
+            args.arg2 = ofd.FileName;
+            var bw = new BackgroundWorker();
+            bw.DoWork += bw_DoWork;
+            bw.RunWorkerAsync(args);
+        }
+
+        void bw_DoWork(object sender, DoWorkEventArgs e)
+        {
+            try
+            {
+                var args = e.Argument as Args;
+                using (var reader = new NANDReader(args.arg1))
+                {
+                    AddOutput("Looking for FCRT.bin in NAND: ");
+                    var data = _x360NAND.GetFCRT(reader);
+                    var _keyutils = new CpukeyUtils();
+                    var key = _keyutils.GetCPUKeyFromTextFile(args.arg2);
+                    AddOutput("Decrypting FCRT.bin...{0}", Environment.NewLine);
+                    var crypt = new Cryptography();
+                    var dec = crypt.DecryptFCRT(ref data, x360Utils.Common.StringUtils.HexToArray(key));
+                    AddOutput("Decrypting FCRT.bin... Result: {0}", Environment.NewLine);
+                    if (crypt.VerifyFCRTDecrypted(ref dec))
+                        AddOutput("OK!");
+                    else
+                        AddOutput("Failed!");
+                }
+            }
+            catch (X360UtilsException ex)
+            {
+                AddOutput("FAILED!");
+                AddException(ex.ToString());
+            }
+            AddOutput(Environment.NewLine);
+            AddDone();
+        }
     }
 }

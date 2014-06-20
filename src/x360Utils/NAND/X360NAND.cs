@@ -11,12 +11,15 @@
 
         public byte[] GetFCRT(NANDReader reader) {
             reader.Seek(0x8000, SeekOrigin.Begin);
-            for(var i = 0; reader.Position < reader.Length; i = 0) {
+            for(var i = -1; reader.Position < reader.Length; i = -1) {
                 var tmp = reader.ReadBytes(0x4000);
-                while(i < tmp.Length) {
+                while(i + 1 < tmp.Length) {
+                    i++;
                     if(tmp[i] != 0x66)
                         continue;
+                    Debug.SendDebug("Found a possible match @ 0x{0:X}", i);
                     if(tmp.Length - i < 0x1c) {
+                        Debug.SendDebug("Found a possible match @ 0x{0:X} however... the buffer needs to be extended...", i);
                         var tmp2 = reader.ReadBytes(0x23);
                         reader.Seek(tmp2.Length, SeekOrigin.Current);
                         Array.Resize(ref tmp, tmp.Length + tmp2.Length);
@@ -24,6 +27,7 @@
                     }
                     if(tmp[i + 1] != 0x63 || tmp[i + 2] != 0x72 || tmp[i + 3] != 0x74 || tmp[i + 4] != 0x2E || tmp[i + 5] != 0x62 || tmp[i + 6] != 0x69 || tmp[i + 7] != 0x6E)
                         continue;
+                    Debug.SendDebug("FCRT.bin found @ 0x{0:X}", i);
                     reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
                     return reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
                 }
