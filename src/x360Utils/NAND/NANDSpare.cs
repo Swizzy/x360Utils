@@ -2,7 +2,7 @@
     using System;
     using System.IO;
 
-    public class NANDSpare {
+    public static class NANDSpare {
         #region MetaType enum
 
         public enum MetaType {
@@ -17,24 +17,24 @@
 
         //internal static readonly byte[] UnInitializedSpareBuffer = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
-        public void TestMetaUtils(string file) {
+        public static void TestMetaUtils(string file) {
             var reader = new NANDReader(file);
             var metaType = reader.MetaType;
             for(long i = 0; i < reader.RawLength; i += 0x4200) {
                 Debug.SendDebug("Seeking to page 0 of block 0x{0:X}", i / 0x4200);
                 reader.RawSeek(i + 0x200, SeekOrigin.Begin);
-                var mData = GetMetaData(reader.RawReadBytes(0x10));
+                var meta = GetMetaData(reader.RawReadBytes(0x10));
                 Main.SendInfo("Block 0x{0:X} Page 0 Information:\r\n", i / 0x4200);
-                Main.SendInfo("LBA: 0x{0:X}\r\n", GetLBA(ref mData, metaType));
-                Main.SendInfo("Block Type: 0x{0:X}\r\n", GetBlockType(ref mData, metaType));
-                Main.SendInfo("FSSize: 0x{0:X}\r\n", GetFSSize(ref mData, metaType));
-                Main.SendInfo("FsFreePages: 0x{0:X}\r\n", GetFsFreePages(ref mData, metaType));
-                Main.SendInfo("FsSequence: 0x{0:X}\r\n", GetFsSequence(ref mData, metaType));
-                Main.SendInfo("BadBlock Marker: 0x{0:X}\r\n", GetBadBlockMarker(ref mData, metaType));
+                Main.SendInfo("LBA: 0x{0:X}\r\n", GetLba(ref meta));
+                Main.SendInfo("Block Type: 0x{0:X}\r\n", GetBlockType(ref meta));
+                Main.SendInfo("FSSize: 0x{0:X}\r\n", GetFsSize(ref meta));
+                Main.SendInfo("FsFreePages: 0x{0:X}\r\n", GetFsFreePages(ref meta));
+                Main.SendInfo("FsSequence: 0x{0:X}\r\n", GetFsSequence(ref meta));
+                Main.SendInfo("BadBlock Marker: 0x{0:X}\r\n", GetBadBlockMarker(ref meta));
             }
         }
 
-        internal MetaType DetectSpareType(NANDReader reader, bool firsttry = true) {
+        internal static MetaType DetectSpareType(NANDReader reader, bool firsttry = true) {
             if(!reader.HasSpare)
                 return MetaType.MetaTypeNone;
             if(firsttry)
@@ -44,9 +44,9 @@
             var tmp = reader.RawReadBytes(0x10);
             var mdata = GetMetaData(tmp);
             if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType0)) {
-                if(GetLBARaw0(ref mdata) == 1)
+                if(GetLbaRaw0(ref mdata) == 1)
                     return MetaType.MetaType0;
-                if(GetLBARaw1(ref mdata) == 1)
+                if(GetLbaRaw1(ref mdata) == 1)
                     return MetaType.MetaType1;
             }
             if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
@@ -58,7 +58,7 @@
                     reader.RawSeek(0x4200000 - 0x4000, SeekOrigin.Begin);
                 tmp = reader.RawReadBytes(0x10);
                 if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
-                    if(BlockIDFromSpare(ref tmp, MetaType.MetaType2) == 1)
+                    if(BlockIdFromSpare(ref tmp, MetaType.MetaType2) == 1)
                         return MetaType.MetaType2;
                 }
             }
@@ -69,31 +69,31 @@
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownMetaType);
         }
 
-        public bool CheckIsBadBlockSpare(ref byte[] spareData, MetaType metaType) {
+        public static bool CheckIsBadBlockSpare(ref byte[] spareData, MetaType metaType) {
             var tmp = GetMetaData(spareData);
             return (GetBadBlockMarker(ref tmp, metaType) != 0xFF);
         }
 
-        public bool CheckIsBadBlock(ref byte[] blockData, MetaType metaType) {
+        public static bool CheckIsBadBlock(ref byte[] blockData, MetaType metaType) {
             var tmp = GetMetaData(ref blockData);
             return (GetBadBlockMarker(ref tmp, metaType) != 0xFF);
         }
 
-        public int BlockIDFromSpare(ref byte[] spareData, MetaType metaType) {
+        public static int BlockIdFromSpare(ref byte[] spareData, MetaType metaType) {
             if(CheckIsBadBlockSpare(ref spareData, metaType))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
             var tmp = GetMetaData(spareData);
-            return GetLBA(ref tmp, metaType);
+            return GetLba(ref tmp, metaType);
         }
 
-        public int BlockIDFromBlock(ref byte[] blockData, MetaType metaType) {
+        public static int BlockIdFromBlock(ref byte[] blockData, MetaType metaType) {
             if(CheckIsBadBlockSpare(ref blockData, metaType))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadBlockDetected);
             var tmp = GetMetaData(ref blockData);
-            return GetLBA(ref tmp, metaType);
+            return GetLba(ref tmp, metaType);
         }
 
-        public static byte[] CalculateECD(ref byte[] data, int offset) {
+        public static byte[] CalculateEcd(ref byte[] data, int offset) {
             UInt32 i, val = 0, v = 0;
             var count = 0;
             for(i = 0; i < 0x1066; i++) {
@@ -113,16 +113,14 @@
                          };
         }
 
-        internal static bool CheckPageECD(ref byte[] data, int offset) {
+        internal static bool CheckPageEcd(ref byte[] data, int offset) {
             var actual = new byte[4];
-            var calculated = CalculateECD(ref data, offset);
+            var calculated = CalculateEcd(ref data, offset);
             Buffer.BlockCopy(data, offset + 524, actual, 0, 4);
             return (calculated[0] == actual[0] && calculated[1] == actual[1] && calculated[2] == actual[2] && calculated[3] == actual[3]);
         }
 
-        internal static bool PageIsFS(ref byte[] data) { return false; }
-
-        public MetaData GetMetaData(ref byte[] data, uint page) {
+        public static MetaData GetMetaData(ref byte[] data, uint page, MetaType metaType = MetaType.MetaTypeNone) {
             if(data.Length % 0x210 != 0)
                 throw new ArgumentException("data must be a multipile of 0x210 bytes!");
             var offset = (int)(page * 0x210);
@@ -130,24 +128,24 @@
                 throw new ArgumentOutOfRangeException("page", @"Page * 0x210 + 0x210 must be within data!");
             var tmp = new byte[0x10];
             Buffer.BlockCopy(data, offset + 0x200, tmp, 0, tmp.Length);
-            return new MetaData(tmp);
+            return new MetaData(tmp, metaType);
         }
 
-        public MetaData GetMetaData(ref byte[] pageData) {
+        public static MetaData GetMetaData(ref byte[] pageData, MetaType metaType = MetaType.MetaTypeNone) {
             if(pageData.Length != 0x210)
                 throw new ArgumentException("pageData must be 0x210 bytes!");
             var tmp = new Byte[0x10];
             Buffer.BlockCopy(pageData, 0x200, tmp, 0, tmp.Length);
-            return new MetaData(tmp);
+            return new MetaData(tmp, metaType);
         }
 
-        public MetaData GetMetaData(byte[] pageSpare) {
+        public static MetaData GetMetaData(byte[] pageSpare, MetaType metaType = MetaType.MetaTypeNone) {
             if(pageSpare.Length != 0x10)
                 throw new ArgumentException("pageSpare must be 0x10 bytes!");
-            return new MetaData(pageSpare);
+            return new MetaData(pageSpare, metaType);
         }
 
-        public UInt16 GetLBA(ref MetaData data, MetaType metaType) {
+        public static UInt16 GetLba(ref MetaData data, MetaType metaType) {
             byte id0, id1;
             switch(metaType) {
                 case MetaType.MetaType0:
@@ -168,9 +166,11 @@
             return (ushort)(id0 << 8 | id1);
         }
 
-        private static UInt16 GetLBARaw0(ref MetaData data) { return (ushort)((data.RawData[1] & 0xF) << 8 | data.RawData[0]); }
+        public static UInt16 GetLba(ref MetaData data) { return GetLba(ref data, data.MetaType); }
 
-        private static UInt16 GetLBARaw1(ref MetaData data) { return (ushort)((data.RawData[2] & 0xF) << 8 | data.RawData[1]); }
+        private static UInt16 GetLbaRaw0(ref MetaData data) { return (ushort)((data.RawData[1] & 0xF) << 8 | data.RawData[0]); }
+
+        private static UInt16 GetLbaRaw1(ref MetaData data) { return (ushort)((data.RawData[2] & 0xF) << 8 | data.RawData[1]); }
 
         //public void SetLBA(ref MetaData data, MetaType metaType, UInt16 lba) {
         //    var id0 = (byte) ((lba >> 8) & 0xFF);
@@ -193,7 +193,7 @@
         //    }
         //}
 
-        public byte GetBlockType(ref MetaData data, MetaType metaType) {
+        public static byte GetBlockType(ref MetaData data, MetaType metaType) {
             switch(metaType) {
                 case MetaType.MetaType0:
                     return data.Meta0.FsBlockType;
@@ -205,6 +205,8 @@
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
         }
+
+        public static byte GetBlockType(ref MetaData data) { return GetBlockType(ref data, data.MetaType); }
 
         //public void SetBlockType(ref MetaData data, MetaType metaType, byte blockType) {
         //    switch(metaType) {
@@ -222,7 +224,7 @@
         //    }
         //}
 
-        public byte GetBadBlockMarker(ref MetaData data, MetaType metaType) {
+        public static byte GetBadBlockMarker(ref MetaData data, MetaType metaType) {
             switch(metaType) {
                 case MetaType.MetaType0:
                     return data.Meta0.BadBlock;
@@ -234,6 +236,8 @@
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
         }
+
+        public static byte GetBadBlockMarker(ref MetaData data) { return GetBadBlockMarker(ref data, data.MetaType); }
 
         //public void SetBadBlockMarker(ref MetaData data, MetaType metaType, byte marker) {
         //    switch(metaType) {
@@ -251,7 +255,7 @@
         //    }
         //}
 
-        public UInt16 GetFSSize(ref MetaData data, MetaType metaType) {
+        public static UInt16 GetFsSize(ref MetaData data, MetaType metaType) {
             byte fs0, fs1;
             switch(metaType) {
                 case MetaType.MetaType0:
@@ -271,6 +275,8 @@
             }
             return (ushort)(fs0 << 8 | fs1);
         }
+
+        public static UInt16 GetFsSize(ref MetaData data) { return GetFsSize(ref data, data.MetaType); }
 
         //public void SetFSSize(ref MetaData data, MetaType metaType, UInt16 fsSize) {
         //    var fs0 = (byte) ((fsSize >> 8) & 0xFF);
@@ -293,7 +299,7 @@
         //    }
         //}
 
-        public UInt16 GetFsFreePages(ref MetaData data, MetaType metaType) {
+        public static UInt16 GetFsFreePages(ref MetaData data, MetaType metaType) {
             switch(metaType) {
                 case MetaType.MetaType0:
                     return data.Meta0.FsPageCount;
@@ -305,6 +311,8 @@
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
         }
+
+        public static UInt16 GetFsFreePages(ref MetaData data) { return GetFsFreePages(ref data, data.MetaType); }
 
         //public void SetFsFreePages(ref MetaData data, MetaType metaType, UInt16 pageCount, bool divideIt = true) {
         //    switch(metaType) {
@@ -325,7 +333,7 @@
         //    }
         //}
 
-        public UInt32 GetFsSequence(ref MetaData data, MetaType metaType) {
+        public static UInt32 GetFsSequence(ref MetaData data, MetaType metaType) {
             byte seq0, seq1, seq2, seq3;
             switch(metaType) {
                 case MetaType.MetaType0:
@@ -352,24 +360,68 @@
             return (uint)(seq3 << 24 | seq2 << 16 | seq1 << 8 | seq0);
         }
 
+        public static UInt32 GetFsSequence(ref MetaData data) { return GetFsSequence(ref data, data.MetaType); }
+
+        //public void SetFsSequence(ref MetaData data, MetaType metaType, UInt32 fsSequence) {
+        //    var seq0 = (byte) (fsSequence & 0xFF);
+        //    var seq1 = (byte) ((fsSequence >> 8) & 0xFF);
+        //    var seq2 = (byte) ((fsSequence >> 16) & 0xFF);
+        //    var seq3 = (byte) ((fsSequence >> 24) & 0xFF);
+        //    switch(metaType) {
+        //        case 0:
+        //            data.Meta0.FsSequence0 = seq0;
+        //            data.Meta0.FsSequence1 = seq1;
+        //            data.Meta0.FsSequence2 = seq2;
+        //            data.Meta0.FsSequence3 = seq3;
+        //            break;
+        //        case 1:
+        //            data.Meta1.FsSequence0 = seq0;
+        //            data.Meta1.FsSequence1 = seq1;
+        //            data.Meta1.FsSequence2 = seq2;
+        //            data.Meta1.FsSequence3 = seq3;
+        //            break;
+        //        case 2:
+        //            data.Meta2.FsSequence0 = seq0;
+        //            data.Meta2.FsSequence1 = seq1;
+        //            data.Meta2.FsSequence2 = seq2;
+        //            break;
+        //        default:
+        //            throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
+        //    }
+        //}
+
+        internal static bool PageIsFsRoot(ref MetaData meta) {
+            switch(meta.MetaType) {
+                case MetaType.MetaType0:
+                case MetaType.MetaType1:
+                    return GetBlockType(ref meta) == 0x30; // SB FS Root
+                case MetaType.MetaType2:
+                    return GetBlockType(ref meta) == 0x2C; // BB FS Root
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         #region Nested type: MetaData
 
         public sealed class MetaData {
             internal readonly MetaType0 Meta0;
             internal readonly MetaType1 Meta1;
             internal readonly MetaType2 Meta2;
+            internal readonly MetaType MetaType;
 
             internal readonly byte[] RawData;
 
             internal MetaData(byte[] rawData, MetaType metaType = MetaType.MetaTypeNone) {
-                Meta0 = new MetaType0(ref rawData);
-                Meta1 = new MetaType1(ref rawData);
-                Meta2 = new MetaType2(ref rawData);
-                //MetaType = metaType;
+                if(metaType == MetaType.MetaType0 || metaType == MetaType.MetaTypeNone)
+                    Meta0 = new MetaType0(ref rawData);
+                if(metaType == MetaType.MetaType1 || metaType == MetaType.MetaTypeNone)
+                    Meta1 = new MetaType1(ref rawData);
+                if(metaType == MetaType.MetaType2 || metaType == MetaType.MetaTypeNone)
+                    Meta2 = new MetaType2(ref rawData);
+                MetaType = metaType;
                 RawData = rawData;
             }
-
-            //internal MetaType MetaType { get; private set; }
         }
 
         #endregion
@@ -377,7 +429,7 @@
         #region Nested type: MetaType0
 
         internal sealed class MetaType0 {
-            private byte[] _data;
+            private readonly byte[] _data;
 
             public MetaType0(ref byte[] rawData) { _data = rawData; }
 
@@ -409,7 +461,7 @@
         #region Nested type: MetaType1
 
         internal sealed class MetaType1 {
-            private byte[] _data;
+            private readonly byte[] _data;
 
             public MetaType1(ref byte[] rawData) { _data = rawData; }
 
@@ -441,7 +493,7 @@
         #region Nested type: MetaType2
 
         internal sealed class MetaType2 {
-            private byte[] _data;
+            private readonly byte[] _data;
 
             public MetaType2(ref byte[] rawData) { _data = rawData; }
 
@@ -467,33 +519,5 @@
         }
 
         #endregion
-
-        //public void SetFsSequence(ref MetaData data, MetaType metaType, UInt32 fsSequence) {
-        //    var seq0 = (byte) (fsSequence & 0xFF);
-        //    var seq1 = (byte) ((fsSequence >> 8) & 0xFF);
-        //    var seq2 = (byte) ((fsSequence >> 16) & 0xFF);
-        //    var seq3 = (byte) ((fsSequence >> 24) & 0xFF);
-        //    switch(metaType) {
-        //        case 0:
-        //            data.Meta0.FsSequence0 = seq0;
-        //            data.Meta0.FsSequence1 = seq1;
-        //            data.Meta0.FsSequence2 = seq2;
-        //            data.Meta0.FsSequence3 = seq3;
-        //            break;
-        //        case 1:
-        //            data.Meta1.FsSequence0 = seq0;
-        //            data.Meta1.FsSequence1 = seq1;
-        //            data.Meta1.FsSequence2 = seq2;
-        //            data.Meta1.FsSequence3 = seq3;
-        //            break;
-        //        case 2:
-        //            data.Meta2.FsSequence0 = seq0;
-        //            data.Meta2.FsSequence1 = seq1;
-        //            data.Meta2.FsSequence2 = seq2;
-        //            break;
-        //        default:
-        //            throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
-        //    }
-        //}
     }
 }

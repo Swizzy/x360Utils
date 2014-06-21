@@ -204,8 +204,7 @@
 
         private void TestMetaUtils(object sender, DoWorkEventArgs e) {
             try {
-                var spareUtils = new NANDSpare();
-                spareUtils.TestMetaUtils(e.Argument as string);
+                NANDSpare.TestMetaUtils(e.Argument as string);
             }
             catch(X360UtilsException ex) {
                 AddOutput("FAILED!");
@@ -295,9 +294,9 @@
             outbox.AppendText(string.Format("CF LDV                 : {0}{1}", info.CFLDV, Environment.NewLine));
             outbox.AppendText(string.Format("CB LDV                 : {0}{1}", info.CBLDV, Environment.NewLine));
             if(info.FatRetail)
-                outbox.AppendText(string.Format("Dashboard Compatibility: {0}{1}", TranslateCBLDVFat(info.CBLDV), Environment.NewLine));
+                outbox.AppendText(string.Format("Dashboard Compatibility: {0}{1}", TranslateCbLdvFat(info.CBLDV), Environment.NewLine));
             else if(info.SlimRetail)
-                outbox.AppendText(string.Format("Dashboard Compatibility: {0}{1}", TranslateCBLDVSlim(info.CBLDV), Environment.NewLine));
+                outbox.AppendText(string.Format("Dashboard Compatibility: {0}{1}", TranslateCbLdvSlim(info.CBLDV), Environment.NewLine));
             outbox.AppendText(string.Format("FUSE Type              : {0}{1}", GetFuseType(info), Environment.NewLine));
             outbox.AppendText(string.Format("Unlocked               : {0}{1}", info.Unlocked ? "Yes" : "No", Environment.NewLine));
             outbox.AppendText(string.Format("Uses Eeprom            : {0}{1}", info.UsesEeprom ? "Yes" : "No", Environment.NewLine));
@@ -315,7 +314,7 @@
                 outbox.AppendText(string.Format("fuseset {0:D2}: {1:X16}{2}", i, info.FUSELines[i], Environment.NewLine));
         }
 
-        private static string TranslateCBLDVFat(int cbldv) {
+        private static string TranslateCbLdvFat(int cbldv) {
             switch(cbldv) {
                 case 1:
                 case 2:
@@ -342,7 +341,7 @@
             }
         }
 
-        private static string TranslateCBLDVSlim(int cbldv) {
+        private static string TranslateCbLdvSlim(int cbldv) {
             switch(cbldv) {
                 case 1:
                 case 2:
@@ -431,6 +430,31 @@
             var tbox = outmenu.SourceControl as TextBox;
             if(tbox != null)
                 File.WriteAllLines(sfd.FileName, tbox.Lines);
+        }
+
+        private void testFsRootScanbtn_Click(object sender, EventArgs e)
+        {
+            _sw = Stopwatch.StartNew();
+            var ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() != DialogResult.OK)
+                return;
+            var bw = new BackgroundWorker();
+            bw.DoWork += testFsRootScanDoWork;
+            bw.RunWorkerAsync(ofd.FileName);
+        }
+
+        private void testFsRootScanDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
+            var reader = new NANDReader(doWorkEventArgs.Argument as string);
+            AddOutput("Testing FSRootScanner... {0}", Environment.NewLine);
+            try {
+                reader.ScanForFsRoot();
+                foreach(var fsRootEntry in reader.FsRootEntries)
+                    AddOutput("{0}{1}", fsRootEntry, Environment.NewLine);
+            }
+            catch(Exception ex) {
+                AddException(ex.ToString());
+            }
+            AddDone();
         }
     }
 }

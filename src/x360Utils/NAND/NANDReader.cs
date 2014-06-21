@@ -8,10 +8,9 @@
         public readonly NANDSpare.MetaType MetaType;
         private readonly List<long> _badBlocks = new List<long>();
         private readonly BinaryReader _binaryReader;
-        private readonly List<long> _fsBlocks = new List<long>();
-        private readonly NANDSpare _spareUtils = new NANDSpare();
-        private bool _doSendPosition;
-        private bool _forcedSB;
+        public readonly List<FsRootEntry> FsRootEntries = new List<FsRootEntry>();
+        private readonly bool _doSendPosition;
+        private bool _forcedSb;
 
         public NANDReader(string file) {
             Debug.SendDebug("Creating NANDReader for: {0}", file);
@@ -26,7 +25,7 @@
                 _doSendPosition = true;
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nChecking for MetaType...");
-                MetaType = _spareUtils.DetectSpareType(this);
+                MetaType = NANDSpare.DetectSpareType(this);
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nMetaType: {0}\r\n", MetaType);
                 //Main.SendInfo("Checking for bad blocks...");
@@ -154,7 +153,7 @@
             RawSeek(0, SeekOrigin.Begin);
             var ret = true;
             for(var i = 0; i < tmp.Length; i += 0x210) {
-                if(!NANDSpare.CheckPageECD(ref tmp, i))
+                if(!NANDSpare.CheckPageEcd(ref tmp, i))
                     ret = false;
             }
             return ret;
@@ -170,43 +169,44 @@
             return (tmp[0] == 0xFF && tmp[1] == 0x4F);
         }
 
-        public long[] FindFSBlocks() {
+        public void ScanForFsRoot() {
             if(!HasSpare)
                 throw new NotSupportedException();
-            if(_fsBlocks.Count > 0)
-                return _fsBlocks.ToArray();
-            _fsBlocks.Clear();
+            if (FsRootEntries.Count > 0)
+                return;
             RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
             for(; _binaryReader.BaseStream.Position < _binaryReader.BaseStream.Length - 0x10;) {
-                var tmp = _binaryReader.ReadBytes(0x10);
-                if(NANDSpare.PageIsFS(ref tmp))
-                    _fsBlocks.Add(Position);
+                var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
+                if(NANDSpare.PageIsFsRoot(ref meta)) {
+                    Debug.SendDebug("FSRoot found @ 0x{0:X} version: {1}", Position, NANDSpare.GetFsSequence(ref meta));
+                    FsRootEntries.Add(new FsRootEntry(Position, NANDSpare.GetFsSequence(ref meta)));
+                }
                 RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
             }
-            if(_fsBlocks.Count > 0)
-                return _fsBlocks.ToArray();
+            if (FsRootEntries.Count > 0)
+                return;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
         }
 
-        public long[] FindBadBlocks(bool forceSB = false) {
+        public long[] FindBadBlocks(bool forceSb = false) {
             if(!HasSpare || MetaType == NANDSpare.MetaType.MetaTypeUnInitialized)
                 throw new NotSupportedException();
-            if(_forcedSB && !forceSB || !_forcedSB && forceSB)
+            if(_forcedSb && !forceSb || !_forcedSb && forceSb)
                 _badBlocks.Clear();
             if(_badBlocks.Count > 0)
                 return _badBlocks.ToArray();
-            _forcedSB = forceSB;
+            _forcedSb = forceSb;
             _badBlocks.Clear();
             RawSeek(0x200, SeekOrigin.Begin); // Seek to first page spare data...
-            var totalBlocks = Length / (MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSB ? 0x20000 : 0x4000) : 0x4000);
+            var totalBlocks = Length / (MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSb ? 0x20000 : 0x4000) : 0x4000);
             for(var block = 0; block < totalBlocks; block++) {
                 var spare = RawReadBytes(0x10);
-                if(_spareUtils.CheckIsBadBlockSpare(ref spare, MetaType)) {
+                if(NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType)) {
                     if(Main.VerifyVerbosityLevel(1))
                         Main.SendInfo("\r\nBadBlock Marker detected @ block 0x{0:X}", block);
                     _badBlocks.Add(block);
                 }
-                RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSB ? 0x20FF0 : 0x41F0) : 0x41F0, SeekOrigin.Current);
+                RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSb ? 0x20FF0 : 0x41F0) : 0x41F0, SeekOrigin.Current);
             }
             if(_badBlocks.Count > 0)
                 return _badBlocks.ToArray();
@@ -214,10 +214,10 @@
         }
 
         public long RawSeek(long offset, SeekOrigin origin) {
-            Debug.SendDebug("Old position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            Debug.SendDebug("[RAW]Old position: 0x{0:X}", _binaryReader.BaseStream.Position);
             Debug.SendDebug("[RAW]Seeking to offset: 0x{0:X} origin: {1}", offset, origin);
             var ret = _binaryReader.BaseStream.Seek(offset, origin);
-            Debug.SendDebug("New position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            Debug.SendDebug("[RAW]New position: 0x{0:X}", _binaryReader.BaseStream.Position);
             return ret;
         }
 
@@ -232,5 +232,17 @@
             Debug.SendDebug("[RAW]Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
             return _binaryReader.Read(buffer, index, count);
         }
+    }
+
+    public class FsRootEntry {
+        public readonly long Offset;
+        public readonly long Version;
+
+        public FsRootEntry(long offset, long version) {
+            Offset = offset;
+            Version = version;
+        }
+
+        public override string ToString() { return string.Format("FSRootEntry @ 0x{0:X} Version: {1}", Offset, Version); }
     }
 }

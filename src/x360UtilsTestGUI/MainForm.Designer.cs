@@ -49,6 +49,7 @@
             this.testFUSEbtn = new System.Windows.Forms.Button();
             this.TestFCRTbtn = new System.Windows.Forms.Button();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.testFsRootScanbtn = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -75,7 +76,7 @@
             // getkeybtn
             // 
             this.getkeybtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.getkeybtn.Location = new System.Drawing.Point(726, 12);
+            this.getkeybtn.Location = new System.Drawing.Point(727, 12);
             this.getkeybtn.Name = "getkeybtn";
             this.getkeybtn.Size = new System.Drawing.Size(184, 23);
             this.getkeybtn.TabIndex = 3;
@@ -86,9 +87,9 @@
             // getfusebtn
             // 
             this.getfusebtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.getfusebtn.Location = new System.Drawing.Point(916, 12);
+            this.getfusebtn.Location = new System.Drawing.Point(917, 12);
             this.getfusebtn.Name = "getfusebtn";
-            this.getfusebtn.Size = new System.Drawing.Size(184, 23);
+            this.getfusebtn.Size = new System.Drawing.Size(183, 23);
             this.getfusebtn.TabIndex = 3;
             this.getfusebtn.Text = "Get Fuses From NAND";
             this.getfusebtn.UseVisualStyleBackColor = true;
@@ -97,7 +98,7 @@
             // getlaunchinibtn
             // 
             this.getlaunchinibtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.getlaunchinibtn.Location = new System.Drawing.Point(726, 41);
+            this.getlaunchinibtn.Location = new System.Drawing.Point(727, 41);
             this.getlaunchinibtn.Name = "getlaunchinibtn";
             this.getlaunchinibtn.Size = new System.Drawing.Size(184, 23);
             this.getlaunchinibtn.TabIndex = 3;
@@ -108,9 +109,9 @@
             // getbadblocksbtn
             // 
             this.getbadblocksbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.getbadblocksbtn.Location = new System.Drawing.Point(916, 41);
+            this.getbadblocksbtn.Location = new System.Drawing.Point(917, 41);
             this.getbadblocksbtn.Name = "getbadblocksbtn";
-            this.getbadblocksbtn.Size = new System.Drawing.Size(184, 23);
+            this.getbadblocksbtn.Size = new System.Drawing.Size(183, 23);
             this.getbadblocksbtn.TabIndex = 3;
             this.getbadblocksbtn.Text = "Get BadBlocks";
             this.getbadblocksbtn.UseVisualStyleBackColor = true;
@@ -119,9 +120,9 @@
             // getsmcconfigbtn
             // 
             this.getsmcconfigbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.getsmcconfigbtn.Location = new System.Drawing.Point(727, 71);
+            this.getsmcconfigbtn.Location = new System.Drawing.Point(727, 70);
             this.getsmcconfigbtn.Name = "getsmcconfigbtn";
-            this.getsmcconfigbtn.Size = new System.Drawing.Size(183, 23);
+            this.getsmcconfigbtn.Size = new System.Drawing.Size(184, 23);
             this.getsmcconfigbtn.TabIndex = 4;
             this.getsmcconfigbtn.Text = "Get SMC_Config from NAND";
             this.getsmcconfigbtn.UseVisualStyleBackColor = true;
@@ -130,7 +131,7 @@
             // getsmcbtn
             // 
             this.getsmcbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.getsmcbtn.Location = new System.Drawing.Point(916, 70);
+            this.getsmcbtn.Location = new System.Drawing.Point(917, 70);
             this.getsmcbtn.Name = "getsmcbtn";
             this.getsmcbtn.Size = new System.Drawing.Size(183, 23);
             this.getsmcbtn.TabIndex = 4;
@@ -225,9 +226,9 @@
             // MetaUtils
             // 
             this.MetaUtils.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.MetaUtils.Location = new System.Drawing.Point(727, 100);
+            this.MetaUtils.Location = new System.Drawing.Point(727, 99);
             this.MetaUtils.Name = "MetaUtils";
-            this.MetaUtils.Size = new System.Drawing.Size(183, 23);
+            this.MetaUtils.Size = new System.Drawing.Size(184, 23);
             this.MetaUtils.TabIndex = 3;
             this.MetaUtils.Text = "TestMetaUtils";
             this.MetaUtils.UseVisualStyleBackColor = true;
@@ -236,7 +237,7 @@
             // testFUSEbtn
             // 
             this.testFUSEbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.testFUSEbtn.Location = new System.Drawing.Point(916, 100);
+            this.testFUSEbtn.Location = new System.Drawing.Point(917, 99);
             this.testFUSEbtn.Name = "testFUSEbtn";
             this.testFUSEbtn.Size = new System.Drawing.Size(183, 23);
             this.testFUSEbtn.TabIndex = 3;
@@ -247,10 +248,10 @@
             // TestFCRTbtn
             // 
             this.TestFCRTbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.TestFCRTbtn.Location = new System.Drawing.Point(727, 128);
+            this.TestFCRTbtn.Location = new System.Drawing.Point(727, 127);
             this.TestFCRTbtn.Margin = new System.Windows.Forms.Padding(2);
             this.TestFCRTbtn.Name = "TestFCRTbtn";
-            this.TestFCRTbtn.Size = new System.Drawing.Size(183, 23);
+            this.TestFCRTbtn.Size = new System.Drawing.Size(184, 23);
             this.TestFCRTbtn.TabIndex = 6;
             this.TestFCRTbtn.Text = "Find && Decrypt FCRT.bin";
             this.TestFCRTbtn.UseVisualStyleBackColor = true;
@@ -264,6 +265,17 @@
             this.progressBar1.Size = new System.Drawing.Size(373, 23);
             this.progressBar1.TabIndex = 7;
             // 
+            // testFsRootScanbtn
+            // 
+            this.testFsRootScanbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.testFsRootScanbtn.Location = new System.Drawing.Point(917, 127);
+            this.testFsRootScanbtn.Name = "testFsRootScanbtn";
+            this.testFsRootScanbtn.Size = new System.Drawing.Size(183, 23);
+            this.testFsRootScanbtn.TabIndex = 3;
+            this.testFsRootScanbtn.Text = "Test FSRootScan";
+            this.testFsRootScanbtn.UseVisualStyleBackColor = true;
+            this.testFsRootScanbtn.Click += new System.EventHandler(this.testFsRootScanbtn_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -275,6 +287,7 @@
             this.Controls.Add(this.getsmcbtn);
             this.Controls.Add(this.getsmcconfigbtn);
             this.Controls.Add(this.getfusebtn);
+            this.Controls.Add(this.testFsRootScanbtn);
             this.Controls.Add(this.testFUSEbtn);
             this.Controls.Add(this.MetaUtils);
             this.Controls.Add(this.getbadblocksbtn);
@@ -316,6 +329,7 @@
         private System.Windows.Forms.Button TestFCRTbtn;
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.Button testFsRootScanbtn;
 
     }
 }
