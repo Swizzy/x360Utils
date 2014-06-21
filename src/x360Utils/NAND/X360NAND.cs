@@ -17,19 +17,25 @@
                     i++;
                     if(tmp[i] != 0x66)
                         continue;
-                    Debug.SendDebug("Found a possible match @ 0x{0:X}", i);
                     if(tmp.Length - i < 0x1c) {
-                        Debug.SendDebug("Found a possible match @ 0x{0:X} however... the buffer needs to be extended...", i);
+                        var pos = reader.Position;
                         var tmp2 = reader.ReadBytes(0x23);
-                        reader.Seek(tmp2.Length, SeekOrigin.Current);
-                        Array.Resize(ref tmp, tmp.Length + tmp2.Length);
-                        Buffer.BlockCopy(tmp2, 0, tmp, tmp.Length - tmp2.Length, tmp2.Length);
+                        reader.Seek(pos, SeekOrigin.Begin);
+                        if(i == tmp.Length) {
+                            Array.Resize(ref tmp, tmp.Length + tmp2.Length);
+                            Buffer.BlockCopy(tmp2, 0, tmp, i, tmp2.Length);
+                        }
+                        else {
+                            if(tmp2[0] != 0x63 || tmp2[1] != 0x72 || tmp2[2] != 0x74 || tmp2[3] != 0x2E || tmp2[4] != 0x62 || tmp2[5] != 0x69 || tmp2[6] != 0x6E)
+                                continue;
+                            Buffer.BlockCopy(tmp2, 0, tmp, i + 1, tmp2.Length);
+                        }
                     }
                     if(tmp[i + 1] != 0x63 || tmp[i + 2] != 0x72 || tmp[i + 3] != 0x74 || tmp[i + 4] != 0x2E || tmp[i + 5] != 0x62 || tmp[i + 6] != 0x69 || tmp[i + 7] != 0x6E)
                         continue;
-                    Debug.SendDebug("FCRT.bin found @ 0x{0:X}", i);
+                    Debug.SendDebug("FCRT.bin found @ 0x{0:X}", reader.Position + i);
                     reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
-                    return reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
+                    return reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
                 }
             }
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "FCRT");
@@ -71,8 +77,8 @@
             tmp = reader.ReadBytes(4);
             reader.Seek(BitOperations.Swap(BitConverter.ToUInt32(tmp, 0)), SeekOrigin.Begin);
             if(!decrypted)
-                return reader.ReadBytes((int) size);
-            tmp = reader.ReadBytes((int) size);
+                return reader.ReadBytes((int)size);
+            tmp = reader.ReadBytes((int)size);
             _crypto.DecryptSMC(ref tmp);
             if(!Cryptography.VerifySMCDecrypted(ref tmp))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
@@ -102,7 +108,7 @@
         public Bootloader[] GetBootLoaders(NANDReader reader, bool readToMemory = false) {
             var bls = new List<Bootloader>();
             reader.Seek(0x8000, SeekOrigin.Begin);
-            bls.Add(new Bootloader(reader, readitin : readToMemory));
+            bls.Add(new Bootloader(reader, readitin: readToMemory));
             try {
                 for(var i = 1; i < 4; i++)
                     bls.Add(new Bootloader(reader, i, readToMemory));
@@ -119,13 +125,13 @@
                 tmp = reader.ReadBytes(4);
                 var offset = BitOperations.Swap(BitConverter.ToUInt32(tmp, 0));
                 reader.Seek(offset, SeekOrigin.Begin);
-                bls.Add(new Bootloader(reader, readitin : readToMemory));
-                bls.Add(new Bootloader(reader, readitin : readToMemory));
+                bls.Add(new Bootloader(reader, readitin: readToMemory));
+                bls.Add(new Bootloader(reader, readitin: readToMemory));
                 try {
                     if(size == 0) {
                         reader.Seek(offset + 0x10000, SeekOrigin.Begin);
-                        bls.Add(new Bootloader(reader, readitin : readToMemory));
-                        bls.Add(new Bootloader(reader, readitin : readToMemory));
+                        bls.Add(new Bootloader(reader, readitin: readToMemory));
+                        bls.Add(new Bootloader(reader, readitin: readToMemory));
                     }
                 }
                 catch(X360UtilsException ex) {
@@ -133,8 +139,8 @@
                         throw;
                     if(size == 0) {
                         reader.Seek(offset + 0x20000, SeekOrigin.Begin);
-                        bls.Add(new Bootloader(reader, readitin : readToMemory));
-                        bls.Add(new Bootloader(reader, readitin : readToMemory));
+                        bls.Add(new Bootloader(reader, readitin: readToMemory));
+                        bls.Add(new Bootloader(reader, readitin: readToMemory));
                     }
                 }
             }
@@ -149,23 +155,8 @@
             reader.Seek(0x95000, SeekOrigin.Begin);
             var data = reader.ReadBytes(0x60);
             var tmp = new byte[] {
-                0xC0,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0xFF,
-                0x0F,
-                0x0F,
-                0x0F,
-                0x0F,
-                0x0F,
-                0x0F,
-                0x0F,
-                0xF0
-            };
+                                     0xC0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0xF0
+                                 };
             if(!BitOperations.CompareByteArrays(ref data, ref tmp, false))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataInvalid);
             var ret = new StringBuilder();
@@ -260,12 +251,13 @@
                         Array.Resize(ref tmp, tmp.Length + tmp2.Length);
                         Buffer.BlockCopy(tmp2, 0, tmp, tmp.Length - tmp2.Length, tmp2.Length);
                     }
-                    if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 || tmp[i + 8] != tmp[i + 3] || tmp[i + 9] != tmp[i + 7])
+                    if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 ||
+                       tmp[i + 8] != tmp[i + 3] || tmp[i + 9] != tmp[i + 7])
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
                         Main.SendInfo("Found launch.ini @ 0x{0:X}!", reader.Position + i);
                     reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
-                    var data = reader.ReadBytes((int) BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
+                    var data = reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
                     return Encoding.ASCII.GetString(data);
                 }
             }

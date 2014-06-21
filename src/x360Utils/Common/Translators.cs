@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.Common {
+﻿namespace x360Utils.Common {
     using System;
 
     public static class Translators {

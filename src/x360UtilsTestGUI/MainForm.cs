@@ -2,14 +2,16 @@
     using System;
     using System.ComponentModel;
     using System.Diagnostics;
+    using System.IO;
     using System.Reflection;
     using System.Windows.Forms;
     using x360Utils;
+    using x360Utils.Common;
     using x360Utils.CPUKey;
     using x360Utils.NAND;
     using Debug = x360Utils.Debug;
 
-    internal sealed partial class MainForm : Form {
+    internal sealed partial class MainForm: Form {
         private readonly X360NAND _x360NAND = new X360NAND();
         private Stopwatch _sw;
 
@@ -19,8 +21,34 @@
             var version = Assembly.GetAssembly(typeof(MainForm)).GetName().Version;
             Debug.DebugOutput += DebugOnDebugOutput;
             Main.InfoOutput += MainOnInfoOutput;
+            Main.BlockInReader += MainOnBlockInReader;
+            Main.MaxBlocksChanged += MainOnMaxBlocksChanged;
             Text = string.Format(Text, version.Major, version.Minor, version.Build);
             Main.VerbosityLevel = int.MaxValue;
+        }
+
+        private void MainOnMaxBlocksChanged(object sender, EventArg<int> eventArg) {
+            try {
+                if(!InvokeRequired)
+                    progressBar1.Maximum = eventArg.Data;
+                else
+                    Invoke(new MethodInvoker(() => MainOnMaxBlocksChanged(null, eventArg)));
+            }
+            catch(Exception ex) {
+                AddException(ex.ToString());
+            }
+        }
+
+        private void MainOnBlockInReader(object sender, EventArg<int> eventArg) {
+            try {
+                if(!InvokeRequired)
+                    progressBar1.Value = eventArg.Data;
+                else
+                    Invoke(new MethodInvoker(() => MainOnBlockInReader(null, eventArg)));
+            }
+            catch(Exception ex) {
+                AddException(ex.ToString());
+            }
         }
 
         private void MainOnInfoOutput(object sender, EventArg<string> eventArg) { AddOutput(eventArg.Data); }
@@ -35,8 +63,7 @@
                 else
                     Invoke(new MethodInvoker(() => DebugOnDebugOutput(sender, eventArg)));
             }
-            catch(Exception) {
-            }
+            catch(Exception) {}
         }
 
         private void AddOutput(string output, params object[] args) {
@@ -47,9 +74,10 @@
                     outbox.ScrollToCaret();
                 }
                 else
-                    Invoke(new MethodInvoker(() => AddOutput(output)));
+                    Invoke(new MethodInvoker(() => AddOutput(output, args)));
             }
-            catch(Exception) {
+            catch(Exception ex) {
+                AddException(ex.ToString());
             }
         }
 
@@ -63,8 +91,7 @@
                 else
                     Invoke(new MethodInvoker(() => AddException(exception)));
             }
-            catch(Exception) {
-            }
+            catch(Exception) {}
         }
 
         private void AddDone() {
@@ -353,57 +380,57 @@
             return "Unknown";
         }
 
-        internal class Args
-        {
-            internal string arg1;
-            internal string arg2;
-        }
-
-
-        private void button1_Click(object sender, EventArgs e) {
+        private void TestFcrTbtnClick(object sender, EventArgs e) {
             _sw = Stopwatch.StartNew();
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            var args = new Args();
-            args.arg1 = ofd.FileName;
+            var fname = ofd.FileName;
             ofd.FileName = "cpukey.txt";
             if (ofd.ShowDialog() != DialogResult.OK)
                 return;
-            args.arg2 = ofd.FileName;
+            var args = new EventArg<string, string>(fname, ofd.FileName);
             var bw = new BackgroundWorker();
-            bw.DoWork += bw_DoWork;
+            bw.DoWork += TestFcrtDoWork;
             bw.RunWorkerAsync(args);
         }
 
-        void bw_DoWork(object sender, DoWorkEventArgs e)
-        {
-            try
-            {
-                var args = e.Argument as Args;
-                using (var reader = new NANDReader(args.arg1))
-                {
-                    AddOutput("Looking for FCRT.bin in NAND: ");
-                    var data = _x360NAND.GetFCRT(reader);
-                    var _keyutils = new CpukeyUtils();
-                    var key = _keyutils.GetCPUKeyFromTextFile(args.arg2);
-                    AddOutput("Decrypting FCRT.bin...{0}", Environment.NewLine);
-                    var crypt = new Cryptography();
-                    var dec = crypt.DecryptFCRT(ref data, x360Utils.Common.StringUtils.HexToArray(key));
-                    AddOutput("Decrypting FCRT.bin... Result: {0}", Environment.NewLine);
-                    if (crypt.VerifyFCRTDecrypted(ref dec))
-                        AddOutput("OK!");
-                    else
-                        AddOutput("Failed!");
+        private void TestFcrtDoWork(object sender, DoWorkEventArgs e) {
+            try {
+                var args = e.Argument as EventArg<string, string>;
+                if(args != null) {
+                    using(var reader = new NANDReader(args.Data1)) {
+                        AddOutput("Looking for FCRT.bin in NAND: ");
+                        var data = _x360NAND.GetFCRT(reader);
+                        AddOutput("OK!{0}", Environment.NewLine);
+                        var keyutils = new CpukeyUtils();
+                        var key = keyutils.GetCPUKeyFromTextFile(args.Data2);
+                        AddOutput("Decrypting FCRT.bin...{0}", Environment.NewLine);
+                        var crypt = new Cryptography();
+                        var dec = crypt.DecryptFCRT(ref data, StringUtils.HexToArray(key));
+                        AddOutput("Verifying FCRT.bin... Result: ");
+                        AddOutput(crypt.VerifyFCRTDecrypted(ref dec, ref data) ? "OK!" : "Failed!");
+                    }
                 }
             }
-            catch (X360UtilsException ex)
-            {
+            catch(Exception ex) {
                 AddOutput("FAILED!");
                 AddException(ex.ToString());
             }
             AddOutput(Environment.NewLine);
             AddDone();
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e) {
+            var sfd = new SaveFileDialog();
+            if(sfd.ShowDialog() != DialogResult.OK)
+                return;
+            var rbox = outmenu.SourceControl as RichTextBox;
+            if(rbox != null)
+                File.WriteAllLines(sfd.FileName, rbox.Lines);
+            var tbox = outmenu.SourceControl as TextBox;
+            if(tbox != null)
+                File.WriteAllLines(sfd.FileName, tbox.Lines);
         }
     }
 }

@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.NAND {
+﻿namespace x360Utils.NAND {
     using System;
     using System.IO;
     using x360Utils.Common;
@@ -38,26 +32,26 @@ namespace x360Utils.NAND {
         public Bootloader(byte[] data, BootLoaderTypes type) {
             Type = type;
             Data = data;
-            Size = (uint) data.Length;
+            Size = (uint)data.Length;
             Offset = 0;
             Build = GetBootloaderVersion(ref data);
         }
 
         public Bootloader(NANDReader reader, int count = 0, bool readitin = false) {
-            Offset = (uint) reader.Position;
+            Offset = (uint)reader.Position;
             var header = reader.ReadBytes(0x10);
             Type = GetTypeFromHeader(ref header, count);
-            Size = (uint) GetBootloaderSize(ref header);
+            Size = (uint)GetBootloaderSize(ref header);
             Build = GetBootloaderVersion(ref header);
             if(readitin) {
                 reader.Seek(Offset, SeekOrigin.Begin);
-                Data = reader.ReadBytes((int) Size);
+                Data = reader.ReadBytes((int)Size);
             }
             else
                 reader.Seek(Offset + Size, SeekOrigin.Begin);
         }
 
-        private int GetBootloaderSize(ref byte[] header) { return (int) BitOperations.Swap(BitConverter.ToUInt32(header, 0xC)); }
+        private int GetBootloaderSize(ref byte[] header) { return (int)BitOperations.Swap(BitConverter.ToUInt32(header, 0xC)); }
 
         public BootLoaderTypes GetTypeFromHeader(ref byte[] header, int count = 0) {
             if(header[0] == 0x43) {

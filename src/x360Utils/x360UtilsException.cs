@@ -1,13 +1,7 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils {
+﻿namespace x360Utils {
     using System;
 
-    public sealed class X360UtilsException : Exception {
+    public sealed class X360UtilsException: Exception {
         #region X360UtilsErrors enum
 
         public enum X360UtilsErrors {

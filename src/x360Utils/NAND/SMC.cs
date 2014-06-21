@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.NAND {
+﻿namespace x360Utils.NAND {
     using System;
 
     public sealed class SMC {
@@ -24,7 +18,7 @@ namespace x360Utils.NAND {
 
         #region TMSTDIValues enum
 
-        public enum TMSTDIValues : byte {
+        public enum TMSTDIValues: byte {
             None = 0x00,
             ArgonData = 0x83,
             DB1F1 = 0xC0,
@@ -171,7 +165,7 @@ namespace x360Utils.NAND {
                 Main.SendInfo("\r\nUnconditional Boot Patch: {0}", FindUnconditionalBoot(ref smcdata) ? "Yes" : "No");
                 TMSTDIValues tms = TMSTDIValues.None, tdi = TMSTDIValues.None;
                 try {
-                    tms = (TMSTDIValues) GetTMS(ref smcdata);
+                    tms = (TMSTDIValues)GetTMS(ref smcdata);
                     if(verbose)
                         Main.SendInfo("\r\nTMS Patch: {0}", tms);
                 }
@@ -184,12 +178,12 @@ namespace x360Utils.NAND {
                 for(var i = 0; i < 4; i++) {
                     try {
                         if(tdi == TMSTDIValues.None) {
-                            tdi = (TMSTDIValues) GetTDI(ref smcdata, i);
+                            tdi = (TMSTDIValues)GetTDI(ref smcdata, i);
                             if(verbose)
                                 Main.SendInfo("\r\nTDI{1} Patch: {0}", tdi, i);
                         }
                         else if(verbose)
-                            Main.SendInfo("\r\nTDI{1} Patch: {0}", (TMSTDIValues) GetTDI(ref smcdata, i), i);
+                            Main.SendInfo("\r\nTDI{1} Patch: {0}", (TMSTDIValues)GetTDI(ref smcdata, i), i);
                     }
                     catch(X360UtilsException ex) {
                         if(ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound && verbose)
@@ -260,10 +254,11 @@ namespace x360Utils.NAND {
                 for(var i = 0; i < smcdata.Length; i++) {
                     if(smcdata[i] != 0xD2)
                         continue;
-                    if(smcdata[i + 1] != smcdata[i + 9] || smcdata[i + 2] != 0x74 || smcdata[i + 4] != 0xD5 || smcdata[i + 5] != 0xE0 || smcdata[i + 6] != 0xFD || smcdata[i + 7] != 0x22 || smcdata[i + 8] != 0xC2)
+                    if(smcdata[i + 1] != smcdata[i + 9] || smcdata[i + 2] != 0x74 || smcdata[i + 4] != 0xD5 || smcdata[i + 5] != 0xE0 || smcdata[i + 6] != 0xFD || smcdata[i + 7] != 0x22 ||
+                       smcdata[i + 8] != 0xC2)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
+                        Main.SendInfo("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 1], smcdata[i + 1]);
                     return smcdata[i + 1];
                 }
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
@@ -277,7 +272,7 @@ namespace x360Utils.NAND {
                             if(smcdata[i] != 0x92 || smcdata[i + 4] != 0xDF || smcdata[i + 5] != 0xF8 || smcdata[i + 6] != 0x22)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI0 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
+                                Main.SendInfo("TDI0 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 1], smcdata[i + 1]);
                             return smcdata[i + 1];
                         }
                         break;
@@ -286,7 +281,7 @@ namespace x360Utils.NAND {
                             if(smcdata[i] != 0xC2 || smcdata[i + 2] != 0x74 || smcdata[i + 3] != 0x02 || smcdata[i + 8] != 0x74 || smcdata[i + 8] != 0x02)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI1 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 1], smcdata[i + 1]);
+                                Main.SendInfo("TDI1 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 1], smcdata[i + 1]);
                             return smcdata[i + 1];
                         }
                         break;
@@ -295,7 +290,7 @@ namespace x360Utils.NAND {
                             if(smcdata[i] != 0x7F || smcdata[i + 1] != 0x01 || smcdata[i + 4] != 0xC2 || smcdata[i + 6] != 0x74 || smcdata[i + 7] != 0x01)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI2 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 5], smcdata[i + 5]);
+                                Main.SendInfo("TDI2 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 5], smcdata[i + 5]);
                             return smcdata[i + 5];
                         }
                         break;
@@ -304,7 +299,7 @@ namespace x360Utils.NAND {
                             if(smcdata[i] != 0x76 || smcdata[i + 2] != 0x78 || smcdata[i + 4] != 0x76 || smcdata[i + 6] != 0xD2)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI3 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) smcdata[i + 7], smcdata[i + 7]);
+                                Main.SendInfo("TDI3 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 7], smcdata[i + 7]);
                             return smcdata[i + 7];
                         }
                         break;
@@ -364,7 +359,8 @@ namespace x360Utils.NAND {
                 for(var i = 0; i < smcdata.Length - 8; i++) {
                     if(smcdata[i] != 0x20)
                         continue;
-                    if(smcdata[i + 1] != 0x15 || smcdata[i + 2] != 0x0B || smcdata[i + 3] != 0xC0 || smcdata[i + 4] != 0x00 || smcdata[i + 5] != 0x78 || smcdata[i + 7] != 0x76 || smcdata[i + 8] != 0x00)
+                    if(smcdata[i + 1] != 0x15 || smcdata[i + 2] != 0x0B || smcdata[i + 3] != 0xC0 || smcdata[i + 4] != 0x00 || smcdata[i + 5] != 0x78 || smcdata[i + 7] != 0x76 ||
+                       smcdata[i + 8] != 0x00)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
                         Main.SendInfo("Found PNC Charge patch @ 0x{0:X}", i);
@@ -391,13 +387,14 @@ namespace x360Utils.NAND {
                 DecryptCheck(ref smcdata);
                 var patched = false;
                 for(var i = 0; i < smcdata.Length; i++) {
-                    if(smcdata[i] != 0xD2 || smcdata[i + 1] != smcdata[i + 9] || smcdata[i + 2] != 0x74 || smcdata[i + 4] != 0xD5 || smcdata[i + 5] != 0xE0 || smcdata[i + 6] != 0xFD || smcdata[i + 7] != 0x22 || smcdata[i + 8] != 0xC2)
+                    if(smcdata[i] != 0xD2 || smcdata[i + 1] != smcdata[i + 9] || smcdata[i + 2] != 0x74 || smcdata[i + 4] != 0xD5 || smcdata[i + 5] != 0xE0 || smcdata[i + 6] != 0xFD ||
+                       smcdata[i + 7] != 0x22 || smcdata[i + 8] != 0xC2)
                         continue;
                     smcdata[i + 1] = tms;
                     smcdata[i + 9] = tms;
                     patched = true;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("TMS Patched @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues) tms, tms);
+                        Main.SendInfo("TMS Patched @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)tms, tms);
                 }
                 return patched;
             }
@@ -421,7 +418,7 @@ namespace x360Utils.NAND {
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
                         }
                         break;
                     case 1:
@@ -431,7 +428,7 @@ namespace x360Utils.NAND {
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
                         }
                         break;
                     case 2:
@@ -441,7 +438,7 @@ namespace x360Utils.NAND {
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
                         }
                         break;
                     case 3:
@@ -451,7 +448,7 @@ namespace x360Utils.NAND {
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues) tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
                         }
                         break;
                     default:

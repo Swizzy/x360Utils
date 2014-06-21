@@ -3,13 +3,14 @@
     using System.Collections.Generic;
     using System.IO;
 
-    public sealed class NANDReader : Stream {
-        readonly NANDSpare _spareUtils = new NANDSpare();
+    public sealed class NANDReader: Stream {
         public readonly bool HasSpare;
         public readonly NANDSpare.MetaType MetaType;
         private readonly List<long> _badBlocks = new List<long>();
         private readonly BinaryReader _binaryReader;
         private readonly List<long> _fsBlocks = new List<long>();
+        private readonly NANDSpare _spareUtils = new NANDSpare();
+        private bool _doSendPosition;
         private bool _forcedSB;
 
         public NANDReader(string file) {
@@ -21,6 +22,8 @@
                 Main.SendInfo("\r\nChecking for spare...");
             HasSpare = CheckForSpare();
             if(HasSpare) {
+                Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4200));
+                _doSendPosition = true;
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nChecking for MetaType...");
                 MetaType = _spareUtils.DetectSpareType(this);
@@ -35,23 +38,20 @@
                 //        throw;
                 //}
             }
-            else
+            else {
+                Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4000));
+                _doSendPosition = true;
                 MetaType = NANDSpare.MetaType.MetaTypeNone;
+            }
         }
 
         #region Overrides of Stream
 
-        public override bool CanRead {
-            get { return true; }
-        }
+        public override bool CanRead { get { return true; } }
 
-        public override bool CanSeek {
-            get { return _binaryReader.BaseStream.CanSeek; }
-        }
+        public override bool CanSeek { get { return _binaryReader.BaseStream.CanSeek; } }
 
-        public override bool CanWrite {
-            get { return false; }
-        }
+        public override bool CanWrite { get { return false; } }
 
         public override long Length {
             get {
@@ -61,10 +61,7 @@
             }
         }
 
-        public override long Position {
-            get { return !HasSpare ? _binaryReader.BaseStream.Position : (_binaryReader.BaseStream.Position / 0x210) * 0x200; }
-            set { Seek(value, SeekOrigin.Begin); }
-        }
+        public override long Position { get { return !HasSpare ? _binaryReader.BaseStream.Position : (_binaryReader.BaseStream.Position / 0x210) * 0x200; } set { Seek(value, SeekOrigin.Begin); } }
 
         public override void Flush() { throw new NotSupportedException(); }
 
@@ -81,9 +78,14 @@
 
         public override int Read(byte[] buffer, int index, int count) {
             Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
-            if(!HasSpare)
+            if(!HasSpare) {
+                if(_doSendPosition)
+                    Main.SendReaderBlock(Position + count);
                 return _binaryReader.Read(buffer, index, count);
-            var pos = (int) _binaryReader.BaseStream.Position % 0x210;
+            }
+            if(_doSendPosition)
+                Main.SendReaderBlock(Position + count);
+            var pos = (int)_binaryReader.BaseStream.Position % 0x210;
             int size;
             if(pos != 0) {
                 size = (0x200 - pos);
@@ -104,15 +106,22 @@
         public new byte ReadByte() {
             if(HasSpare && _binaryReader.BaseStream.Position % 0x210 != 0)
                 RawSeek(0x10, SeekOrigin.Current);
+            if(_doSendPosition)
+                Main.SendReaderBlock(Position + 1);
             return _binaryReader.ReadByte();
         }
 
         public byte[] ReadBytes(int count) {
             Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
-            if(!HasSpare)
+            if(!HasSpare) {
+                if(_doSendPosition)
+                    Main.SendReaderBlock(Position + count);
                 return _binaryReader.ReadBytes(count);
+            }
+            if(_doSendPosition)
+                Main.SendReaderBlock(Position + count);
             var buffer = new byte[count];
-            var pos = (int) _binaryReader.BaseStream.Position % 0x210;
+            var pos = (int)_binaryReader.BaseStream.Position % 0x210;
             int size, index = 0;
             if(pos != 0) {
                 size = (0x200 - pos);
@@ -135,14 +144,9 @@
 
         #endregion Overrides of Stream
 
-        public long RawLength {
-            get { return _binaryReader.BaseStream.Length; }
-        }
+        public long RawLength { get { return _binaryReader.BaseStream.Length; } }
 
-        public long RawPosition {
-            get { return _binaryReader.BaseStream.Position; }
-            set { RawSeek(value, SeekOrigin.Begin); }
-        }
+        public long RawPosition { get { return _binaryReader.BaseStream.Position; } set { RawSeek(value, SeekOrigin.Begin); } }
 
         private bool CheckForSpare() {
             RawSeek(0, SeekOrigin.Begin);
@@ -219,6 +223,8 @@
 
         public byte[] RawReadBytes(int count) {
             Debug.SendDebug("[RAW]Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
+            if(_doSendPosition)
+                Main.SendReaderBlock(Position + count);
             return _binaryReader.ReadBytes(count);
         }
 

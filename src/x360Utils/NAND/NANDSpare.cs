@@ -44,9 +44,9 @@
             var tmp = reader.RawReadBytes(0x10);
             var mdata = GetMetaData(tmp);
             if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType0)) {
-                if (GetLBARaw0(ref mdata) == 1)
+                if(GetLBARaw0(ref mdata) == 1)
                     return MetaType.MetaType0;
-                if (GetLBARaw1(ref mdata) == 1)
+                if(GetLBARaw1(ref mdata) == 1)
                     return MetaType.MetaType1;
             }
             if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
@@ -109,11 +109,8 @@
             }
             val = ~val;
             return new[] {
-                (byte) (val << 6),
-                (byte) ((val >> 2) & 0xFF),
-                (byte) ((val >> 10) & 0xFF),
-                (byte) ((val >> 18) & 0xFF)
-            };
+                             (byte)(val << 6), (byte)((val >> 2) & 0xFF), (byte)((val >> 10) & 0xFF), (byte)((val >> 18) & 0xFF)
+                         };
         }
 
         internal static bool CheckPageECD(ref byte[] data, int offset) {
@@ -128,7 +125,7 @@
         public MetaData GetMetaData(ref byte[] data, uint page) {
             if(data.Length % 0x210 != 0)
                 throw new ArgumentException("data must be a multipile of 0x210 bytes!");
-            var offset = (int) (page * 0x210);
+            var offset = (int)(page * 0x210);
             if(offset + 0x210 > data.Length)
                 throw new ArgumentOutOfRangeException("page", @"Page * 0x210 + 0x210 must be within data!");
             var tmp = new byte[0x10];
@@ -168,13 +165,12 @@
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
-            return (ushort) (id0 << 8 | id1);
+            return (ushort)(id0 << 8 | id1);
         }
 
         private static UInt16 GetLBARaw0(ref MetaData data) { return (ushort)((data.RawData[1] & 0xF) << 8 | data.RawData[0]); }
 
         private static UInt16 GetLBARaw1(ref MetaData data) { return (ushort)((data.RawData[2] & 0xF) << 8 | data.RawData[1]); }
-
 
         //public void SetLBA(ref MetaData data, MetaType metaType, UInt16 lba) {
         //    var id0 = (byte) ((lba >> 8) & 0xFF);
@@ -273,7 +269,7 @@
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
-            return (ushort) (fs0 << 8 | fs1);
+            return (ushort)(fs0 << 8 | fs1);
         }
 
         //public void SetFSSize(ref MetaData data, MetaType metaType, UInt16 fsSize) {
@@ -304,7 +300,7 @@
                 case MetaType.MetaType1:
                     return data.Meta1.FsPageCount;
                 case MetaType.MetaType2:
-                    return (ushort) (data.Meta2.FsPageCount * 4);
+                    return (ushort)(data.Meta2.FsPageCount * 4);
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
@@ -353,36 +349,8 @@
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
-            return (uint) (seq3 << 24 | seq2 << 16 | seq1 << 8 | seq0);
+            return (uint)(seq3 << 24 | seq2 << 16 | seq1 << 8 | seq0);
         }
-
-        //public void SetFsSequence(ref MetaData data, MetaType metaType, UInt32 fsSequence) {
-        //    var seq0 = (byte) (fsSequence & 0xFF);
-        //    var seq1 = (byte) ((fsSequence >> 8) & 0xFF);
-        //    var seq2 = (byte) ((fsSequence >> 16) & 0xFF);
-        //    var seq3 = (byte) ((fsSequence >> 24) & 0xFF);
-        //    switch(metaType) {
-        //        case 0:
-        //            data.Meta0.FsSequence0 = seq0;
-        //            data.Meta0.FsSequence1 = seq1;
-        //            data.Meta0.FsSequence2 = seq2;
-        //            data.Meta0.FsSequence3 = seq3;
-        //            break;
-        //        case 1:
-        //            data.Meta1.FsSequence0 = seq0;
-        //            data.Meta1.FsSequence1 = seq1;
-        //            data.Meta1.FsSequence2 = seq2;
-        //            data.Meta1.FsSequence3 = seq3;
-        //            break;
-        //        case 2:
-        //            data.Meta2.FsSequence0 = seq0;
-        //            data.Meta2.FsSequence1 = seq1;
-        //            data.Meta2.FsSequence2 = seq2;
-        //            break;
-        //        default:
-        //            throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
-        //    }
-        //}
 
         #region Nested type: MetaData
 
@@ -413,49 +381,27 @@
 
             public MetaType0(ref byte[] rawData) { _data = rawData; }
 
-            public byte FsBlockType {
-                get { return (byte) (_data[12] & 0x3F); }
-            }
+            public byte FsBlockType { get { return (byte)(_data[12] & 0x3F); } }
 
-            public byte FsPageCount {
-                get { return _data[9]; }
-            } // free pages left in block (ie: if 3 pages are used by cert then this would be 29:0x1d)
+            public byte FsPageCount { get { return _data[9]; } } // free pages left in block (ie: if 3 pages are used by cert then this would be 29:0x1d)
 
-            public byte FsSequence0 {
-                get { return _data[2]; }
-            }
+            public byte FsSequence0 { get { return _data[2]; } }
 
-            public byte FsSequence1 {
-                get { return _data[3]; }
-            }
+            public byte FsSequence1 { get { return _data[3]; } }
 
-            public byte FsSequence2 {
-                get { return _data[4]; }
-            }
+            public byte FsSequence2 { get { return _data[4]; } }
 
-            public byte FsSequence3 {
-                get { return _data[6]; }
-            }
+            public byte FsSequence3 { get { return _data[6]; } }
 
-            public byte FsSize0 {
-                get { return _data[8]; }
-            }
+            public byte FsSize0 { get { return _data[8]; } }
 
-            public byte FsSize1 {
-                get { return _data[7]; }
-            } // ((FsSize0<<8)+FsSize1) = cert size
+            public byte FsSize1 { get { return _data[7]; } } // ((FsSize0<<8)+FsSize1) = cert size
 
-            public byte BlockID0 {
-                get { return (byte) (_data[1] & 0xF); }
-            }
+            public byte BlockID0 { get { return (byte)(_data[1] & 0xF); } }
 
-            public byte BlockID1 {
-                get { return _data[0]; }
-            }
+            public byte BlockID1 { get { return _data[0]; } }
 
-            public byte BadBlock {
-                get { return _data[5]; }
-            }
+            public byte BadBlock { get { return _data[5]; } }
         }
 
         #endregion
@@ -467,49 +413,27 @@
 
             public MetaType1(ref byte[] rawData) { _data = rawData; }
 
-            public byte FsBlockType {
-                get { return (byte) (_data[12] & 0x3F); }
-            }
+            public byte FsBlockType { get { return (byte)(_data[12] & 0x3F); } }
 
-            public byte FsPageCount {
-                get { return _data[9]; }
-            } // free pages left in block (ie: if 3 pages are used by cert then this would be 29:0x1d)
+            public byte FsPageCount { get { return _data[9]; } } // free pages left in block (ie: if 3 pages are used by cert then this would be 29:0x1d)
 
-            public byte FsSequence0 {
-                get { return _data[0]; }
-            }
+            public byte FsSequence0 { get { return _data[0]; } }
 
-            public byte FsSequence1 {
-                get { return _data[3]; }
-            }
+            public byte FsSequence1 { get { return _data[3]; } }
 
-            public byte FsSequence2 {
-                get { return _data[4]; }
-            }
+            public byte FsSequence2 { get { return _data[4]; } }
 
-            public byte FsSequence3 {
-                get { return _data[6]; }
-            }
+            public byte FsSequence3 { get { return _data[6]; } }
 
-            public byte FsSize0 {
-                get { return _data[8]; }
-            }
+            public byte FsSize0 { get { return _data[8]; } }
 
-            public byte FsSize1 {
-                get { return _data[7]; }
-            } // ((FsSize0<<8)+FsSize1) = cert size
+            public byte FsSize1 { get { return _data[7]; } } // ((FsSize0<<8)+FsSize1) = cert size
 
-            public byte BlockID0 {
-                get { return (byte) (_data[2] & 0xF); }
-            }
+            public byte BlockID0 { get { return (byte)(_data[2] & 0xF); } }
 
-            public byte BlockID1 {
-                get { return _data[1]; }
-            }
+            public byte BlockID1 { get { return _data[1]; } }
 
-            public byte BadBlock {
-                get { return _data[5]; }
-            }
+            public byte BadBlock { get { return _data[5]; } }
         }
 
         #endregion
@@ -521,47 +445,55 @@
 
             public MetaType2(ref byte[] rawData) { _data = rawData; }
 
-            public byte BadBlock {
-                get { return _data[0]; }
-            }
+            public byte BadBlock { get { return _data[0]; } }
 
-            public byte BlockID0 {
-                get { return (byte) (_data[2] & 0xF); }
-            }
+            public byte BlockID0 { get { return (byte)(_data[2] & 0xF); } }
 
-            public byte BlockID1 {
-                get { return _data[1]; }
-            }
+            public byte BlockID1 { get { return _data[1]; } }
 
-            public byte FsBlockType {
-                get { return (byte) (_data[12] & 0x3F); }
-            }
+            public byte FsBlockType { get { return (byte)(_data[12] & 0x3F); } }
 
-            public byte FsPageCount {
-                get { return _data[9]; }
-            } // FS: 04 (system config reserve) free pages left in block (multiples of 4 pages, ie if 3f then 3f*4 pages are free after)
+            public byte FsPageCount { get { return _data[9]; } } // FS: 04 (system config reserve) free pages left in block (multiples of 4 pages, ie if 3f then 3f*4 pages are free after)
 
-            public byte FsSequence0 {
-                get { return _data[5]; }
-            }
+            public byte FsSequence0 { get { return _data[5]; } }
 
-            public byte FsSequence1 {
-                get { return _data[4]; }
-            }
+            public byte FsSequence1 { get { return _data[4]; } }
 
-            public byte FsSequence2 {
-                get { return _data[3]; }
-            }
+            public byte FsSequence2 { get { return _data[3]; } }
 
-            public byte FsSize0 {
-                get { return _data[8]; }
-            } // FS: 20 (size of flash filesys in smallblocks >>5)
+            public byte FsSize0 { get { return _data[8]; } } // FS: 20 (size of flash filesys in smallblocks >>5)
 
-            public byte FsSize1 {
-                get { return _data[7]; }
-            } //FS: 06 (system reserve block number) else ((FsSize0<<16)+(FsSize1<<8)) = cert size
+            public byte FsSize1 { get { return _data[7]; } } //FS: 06 (system reserve block number) else ((FsSize0<<16)+(FsSize1<<8)) = cert size
         }
 
         #endregion
+
+        //public void SetFsSequence(ref MetaData data, MetaType metaType, UInt32 fsSequence) {
+        //    var seq0 = (byte) (fsSequence & 0xFF);
+        //    var seq1 = (byte) ((fsSequence >> 8) & 0xFF);
+        //    var seq2 = (byte) ((fsSequence >> 16) & 0xFF);
+        //    var seq3 = (byte) ((fsSequence >> 24) & 0xFF);
+        //    switch(metaType) {
+        //        case 0:
+        //            data.Meta0.FsSequence0 = seq0;
+        //            data.Meta0.FsSequence1 = seq1;
+        //            data.Meta0.FsSequence2 = seq2;
+        //            data.Meta0.FsSequence3 = seq3;
+        //            break;
+        //        case 1:
+        //            data.Meta1.FsSequence0 = seq0;
+        //            data.Meta1.FsSequence1 = seq1;
+        //            data.Meta1.FsSequence2 = seq2;
+        //            data.Meta1.FsSequence3 = seq3;
+        //            break;
+        //        case 2:
+        //            data.Meta2.FsSequence0 = seq0;
+        //            data.Meta2.FsSequence1 = seq1;
+        //            data.Meta2.FsSequence2 = seq2;
+        //            break;
+        //        default:
+        //            throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
+        //    }
+        //}
     }
 }

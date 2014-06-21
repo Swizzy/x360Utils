@@ -50,14 +50,14 @@
                     Thread.Sleep(100);
                 Main.SendInfo("Scannning network for your console... Looking for console response based on MAC Address...");
                 var proc = new Process {
-                    StartInfo = {
-                        FileName = "arp",
-                        Arguments = !string.IsNullOrEmpty(ipfull) ? "-a -N " + ipfull.Trim() : "-a",
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true
-                    }
-                };
+                                           StartInfo = {
+                                                           FileName = "arp",
+                                                           Arguments = !string.IsNullOrEmpty(ipfull) ? "-a -N " + ipfull.Trim() : "-a",
+                                                           CreateNoWindow = true,
+                                                           UseShellExecute = false,
+                                                           RedirectStandardOutput = true
+                                                       }
+                                       };
                 proc.Start();
                 var output = proc.StandardOutput.ReadToEnd();
                 proc.WaitForExit();
@@ -76,8 +76,7 @@
                     try {
                         tmp.Add(tmpl[1].ToUpper(), tmpl[0]);
                     }
-                    catch {
-                    }
+                    catch {}
                 }
                 try {
                     XeLLIPAddress = IPAddress.Parse(tmp[_macAddress]);

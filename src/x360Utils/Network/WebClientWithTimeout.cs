@@ -2,7 +2,7 @@
     using System;
     using System.Net;
 
-    public sealed class WebClientWithTimeout : WebClient {
+    public sealed class WebClientWithTimeout: WebClient {
         public WebClientWithTimeout() { Timeout = 60000; }
 
         public WebClientWithTimeout(int timeout) { Timeout = timeout; }

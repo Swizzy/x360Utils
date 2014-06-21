@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.Common {
+﻿namespace x360Utils.Common {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
@@ -12,7 +6,9 @@ namespace x360Utils.Common {
     using System.Text.RegularExpressions;
 
     public static class StringUtils {
-        private static readonly char[] HexCharTable = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+        private static readonly char[] HexCharTable = {
+                                                          '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+                                                      };
 
         public static string ArrayToHex(IList<byte> value, int i = 0, int count = -1) {
             var c = new char[value.Count * 2];
@@ -48,6 +44,8 @@ namespace x360Utils.Common {
 
         public static bool IsIPv4(string input) { return Regex.IsMatch(input, "^([0-9]{1,3}\\.){3}[0-9]{1,3}$"); }
 
-        public static string GetAciiString(ref byte[] data, int offset, int length, bool trim = false) { return trim ? Encoding.ASCII.GetString(data, offset, length).Trim() : Encoding.ASCII.GetString(data, offset, length); }
+        public static string GetAciiString(ref byte[] data, int offset, int length, bool trim = false) {
+            return trim ? Encoding.ASCII.GetString(data, offset, length).Trim() : Encoding.ASCII.GetString(data, offset, length);
+        }
     }
 }

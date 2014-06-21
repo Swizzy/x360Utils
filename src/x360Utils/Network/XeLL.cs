@@ -4,11 +4,12 @@
     using System.Net;
     using System.Net.NetworkInformation;
     using System.Net.Sockets;
+    using x360Utils.Common;
     using x360Utils.CPUKey;
 
     public class XeLL {
         internal static void FuseDownloader(string ip) {
-            if (!Common.StringUtils.IsIPv4(ip))
+            if(!StringUtils.IsIPv4(ip))
                 throw new ArgumentException("Bad IP Input! (This function only supports IPv4)");
             using(var client = new WebClientWithTimeout()) {
                 try {
@@ -25,7 +26,7 @@
         internal static void FuseDownloader(IPAddress ip) { FuseDownloader(ip.ToString()); }
 
         public string GetKeyFromXeLL(string ip) {
-            if(!Common.StringUtils.IsIPv4(ip))
+            if(!StringUtils.IsIPv4(ip))
                 throw new ArgumentException("Bad IP Input! (This function only supports IPv4)");
             return GetKeyFromXeLL(IPAddress.Parse(ip));
         }

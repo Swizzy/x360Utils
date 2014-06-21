@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.NAND {
+﻿namespace x360Utils.NAND {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
@@ -38,7 +32,7 @@ namespace x360Utils.NAND {
         private static uint CalculateSMCCheckSum(IList<byte> smcConfig) {
             uint i, len, sum = 0;
             for(i = 0, len = 252; i < len; i++)
-                sum += (uint) smcConfig[(int) (i + 0x10)] & 0xFF;
+                sum += (uint)smcConfig[(int)(i + 0x10)] & 0xFF;
             return (~sum & 0xFFFF);
         }
 
@@ -52,27 +46,32 @@ namespace x360Utils.NAND {
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadChecksum);
         }
 
-        public string GetTempString(ref byte[] smcconfigdata, SMCConfigTemps temp) { return string.Format("{0}°C", smcconfigdata[(int) temp]); }
+        public string GetTempString(ref byte[] smcconfigdata, SMCConfigTemps temp) { return string.Format("{0}°C", smcconfigdata[(int)temp]); }
 
         public string GetFanSpeed(ref byte[] smcconfigdata, SMCConfigFans fan) {
-            switch(smcconfigdata[(int) fan] & 128) {
+            switch(smcconfigdata[(int)fan] & 128) {
                 case 0:
                 case 127:
                     return "AUTO";
                 default:
-                    return string.Format("{0}%", smcconfigdata[(int) fan] & 127);
+                    return string.Format("{0}%", smcconfigdata[(int)fan] & 127);
             }
         }
 
         public string GetVideoRegion(ref byte[] smcconfigdata) { return Translators.TranslateVideoRegion(string.Format("0x{0:X}{1:X2}", smcconfigdata[0x22A], smcconfigdata[0x22B])); }
 
-        public string GetGameRegion(ref byte[] smcconfigdata, bool includebytes = false) { return Translators.TranslateGameRegion(string.Format("0x{0:X2}{1:X2}", smcconfigdata[0x22C], smcconfigdata[0x22D]), includebytes); }
+        public string GetGameRegion(ref byte[] smcconfigdata, bool includebytes = false) {
+            return Translators.TranslateGameRegion(string.Format("0x{0:X2}{1:X2}", smcconfigdata[0x22C], smcconfigdata[0x22D]), includebytes);
+        }
 
         public string GetDVDRegion(ref byte[] smcconfigdata) { return Translators.TranslateDVDRegion(smcconfigdata[0x237].ToString(CultureInfo.InvariantCulture)); }
 
         public string GetCheckSum(ref byte[] smcconfigdata) { return string.Format("0x{0:X2}{1:X2}", smcconfigdata[0], smcconfigdata[1]); }
 
-        public string GetMACAdress(ref byte[] smcconfigdata) { return string.Format("{0:X2}:{1:X2}:{2:X2}:{3:X2}:{4:X2}:{5:X2}", smcconfigdata[0x220], smcconfigdata[0x221], smcconfigdata[0x222], smcconfigdata[0x223], smcconfigdata[0x224], smcconfigdata[0x225]); }
+        public string GetMACAdress(ref byte[] smcconfigdata) {
+            return string.Format("{0:X2}:{1:X2}:{2:X2}:{3:X2}:{4:X2}:{5:X2}", smcconfigdata[0x220], smcconfigdata[0x221], smcconfigdata[0x222], smcconfigdata[0x223], smcconfigdata[0x224],
+                                 smcconfigdata[0x225]);
+        }
 
         private static string TranslateResetCode(char code) {
             switch(code) {

@@ -1,10 +1,4 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.NAND {
+﻿namespace x360Utils.NAND {
     using System;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -36,7 +30,9 @@ namespace x360Utils.NAND {
 
         public bool FCRTUsed(ushort fcrtflag) { return (fcrtflag & 0x20) == 0x20; }
 
-        public string GetGameRegion(ref byte[] keyvaultdata, bool includebytes = false) { return Translators.TranslateGameRegion(string.Format("0x{0:X2}{1:X2}", keyvaultdata[0xC8], keyvaultdata[0xC9]), includebytes); }
+        public string GetGameRegion(ref byte[] keyvaultdata, bool includebytes = false) {
+            return Translators.TranslateGameRegion(string.Format("0x{0:X2}{1:X2}", keyvaultdata[0xC8], keyvaultdata[0xC9]), includebytes);
+        }
 
         public string GetDVDKey(ref byte[] keyvaultdata) { return StringUtils.ArrayToHex(keyvaultdata, 0x100, 0x10); }
 

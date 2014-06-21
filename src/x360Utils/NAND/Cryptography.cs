@@ -1,19 +1,14 @@
-﻿#region
-
-
-
-#endregion
-
-namespace x360Utils.NAND {
+﻿namespace x360Utils.NAND {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
     using System.Security.Cryptography;
     using x360Utils.Common;
-    using System.IO;
 
     public sealed class Cryptography {
         #region BLEncryptionTypes enum
 
-        public enum BLEncryptionTypes : ushort {
+        public enum BLEncryptionTypes: ushort {
             Default = 0,
             CBB = 0x800,
             MFGCBB = 0x801,
@@ -23,23 +18,8 @@ namespace x360Utils.NAND {
         #endregion
 
         private static readonly byte[] BLKey = new byte[] {
-            0xDD,
-            0x88,
-            0xAD,
-            0x0C,
-            0x9E,
-            0xD6,
-            0x69,
-            0xE7,
-            0xB5,
-            0x67,
-            0x94,
-            0xFB,
-            0x68,
-            0x56,
-            0x3E,
-            0xFA
-        };
+                                                              0xDD, 0x88, 0xAD, 0x0C, 0x9E, 0xD6, 0x69, 0xE7, 0xB5, 0x67, 0x94, 0xFB, 0x68, 0x56, 0x3E, 0xFA
+                                                          };
 
         public static void Rc4(ref byte[] bytes, byte[] key) {
             var s = new byte[256];
@@ -47,7 +27,7 @@ namespace x360Utils.NAND {
             byte temp;
             int i;
             for(i = 0; i < 256; i++) {
-                s[i] = (byte) i;
+                s[i] = (byte)i;
                 k[i] = key[i % key.GetLength(0)];
             }
             var j = 0;
@@ -75,33 +55,27 @@ namespace x360Utils.NAND {
 
         public void DecryptSMC(ref byte[] data) {
             var key = new byte[] {
-                0x42,
-                0x75,
-                0x4E,
-                0x79
-            };
+                                     0x42, 0x75, 0x4E, 0x79
+                                 };
             for(var i = 0; i < data.Length; i++) {
                 var num1 = data[i];
                 var num2 = num1 * 0xFB;
                 data[i] = Convert.ToByte(num1 ^ (key[i & 3] & 0xFF));
-                key[(i + 1) & 3] += (byte) num2;
+                key[(i + 1) & 3] += (byte)num2;
                 key[(i + 2) & 3] += Convert.ToByte(num2 >> 8);
             }
         }
 
         public void EncryptSMC(ref byte[] data) {
             var key = new byte[] {
-                0x42,
-                0x75,
-                0x4e,
-                0x79
-            };
+                                     0x42, 0x75, 0x4e, 0x79
+                                 };
             for(var i = 0; i < data.Length; i++) {
                 var num2 = data[i] ^ (key[i & 3] & 0xff);
                 var num3 = num2 * 0xFB;
                 data[i] = Convert.ToByte(num2);
-                key[(i + 1) & 3] = (byte) (key[(i + 1) & 3] + (byte) num3);
-                key[(i + 2) & 3] = (byte) (key[(i + 2) & 3] + Convert.ToByte(num3 >> 8));
+                key[(i + 1) & 3] = (byte)(key[(i + 1) & 3] + (byte)num3);
+                key[(i + 2) & 3] = (byte)(key[(i + 2) & 3] + Convert.ToByte(num3 >> 8));
             }
         }
 
@@ -112,7 +86,7 @@ namespace x360Utils.NAND {
         public BLEncryptionTypes GetBootloaderCryptoType(ref byte[] data) {
             var type = BitOperations.Swap(BitConverter.ToUInt16(data, 6));
             if(Enum.IsDefined(typeof(BLEncryptionTypes), type))
-                return (BLEncryptionTypes) type;
+                return (BLEncryptionTypes)type;
             throw new NotSupportedException(string.Format("This encryption type is not supported yet... Value: {0:X4}", type));
         }
 
@@ -292,40 +266,51 @@ namespace x360Utils.NAND {
         }
 
         #endregion Keyvault
-        
+
         #region FCRT
 
-        public bool VerifyFCRTDecrypted(ref byte[] data) {
-            if (data.Length < 0x140)
+        public bool VerifyFCRTDecrypted(ref byte[] decryptedData, ref byte[] encryptedData) {
+            if(decryptedData.Length < 0x140 || encryptedData.Length < 0x140)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
-            using (var sha1 = new SHA1Managed()) {
+            using(var sha1 = new SHA1Managed()) {
                 var hash = new byte[20];
-                Buffer.BlockCopy(data, 0x12C, hash, 0, hash.Length);
-                var hash2 = sha1.ComputeHash(data);
+                Buffer.BlockCopy(encryptedData, 0x12C, hash, 0, hash.Length);
+                var hash2 = sha1.ComputeHash(decryptedData);
                 return BitOperations.CompareByteArrays(ref hash, ref hash2);
             }
         }
 
         public byte[] DecryptFCRT(ref byte[] data, byte[] cpukey) {
-            if (data.Length < 0x120)
+            if(data.Length < 0x120)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             var offset = BitOperations.Swap(BitConverter.ToUInt32(data, 0x11C));
             var length = BitOperations.Swap(BitConverter.ToUInt32(data, 0x118));
             var iv = new byte[0x10];
             Buffer.BlockCopy(data, 0x100, iv, 0, iv.Length);
-            if (data.Length < offset + length)
+            if(data.Length < offset + length)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataInvalid);
             var buf = new byte[length];
+            var ret = new List<byte>();
             Buffer.BlockCopy(data, (int)offset, buf, 0, buf.Length);
-            using (var aes = new RijndaelManaged()) {
+            using(var aes = new RijndaelManaged()) {
                 aes.Mode = CipherMode.CBC;
-                aes.BlockSize = 128;
+                aes.KeySize = 128;
                 aes.Key = cpukey;
                 aes.IV = iv;
-                using (var ms = new MemoryStream(data)) 
-                    using (var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))                    
-                        return new BinaryReader(cs).ReadBytes((int)cs.Length);
+                aes.Padding = PaddingMode.None;
+                using(var ms = new MemoryStream(buf)) {
+                    using(var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read)) {
+                        var b = 0;
+                        while(b != -1) {
+                            b = cs.ReadByte();
+                            if(b != -1)
+                                ret.Add((byte)b);
+                        }
+                    }
+                }
+                //return new BinaryReader(cs).ReadBytes((int)length);
             }
+            return ret.ToArray();
         }
 
         #endregion

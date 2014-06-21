@@ -1,11 +1,10 @@
 ﻿namespace x360Utils.CPUKey {
     using System;
-    using System.Globalization;
     using System.IO;
     using x360Utils.Common;
 
     public sealed class CpukeyUtils {
-        private static Random _random = new Random((int) (DateTime.Now.Ticks & 0xFFFF));
+        private static Random _random = new Random((int)(DateTime.Now.Ticks & 0xFFFF));
 
         public static void UpdateRandom(int seed) { _random = new Random(seed); }
 
@@ -14,13 +13,12 @@
             do {
                 _random.NextBytes(key);
                 if(BitOperations.DataIsZero(ref key, 0, key.Length))
-                    UpdateRandom((int) (DateTime.Now.Ticks & 0xFFFF));
+                    UpdateRandom((int)(DateTime.Now.Ticks & 0xFFFF));
                 try {
                     VerifyCpuKey(ref key);
                     return key;
                 }
-                catch(X360UtilsException) {
-                }
+                catch(X360UtilsException) {}
             }
             while(true);
         }
@@ -29,7 +27,7 @@
             uint acc1 = 0, acc2 = 0;
             for(var cnt = 0; cnt < 0x80; cnt++, acc1 >>= 1) {
                 var bTmp = key[cnt >> 3];
-                var dwTmp = (uint) ((bTmp >> (cnt & 7)) & 1);
+                var dwTmp = (uint)((bTmp >> (cnt & 7)) & 1);
                 if(cnt < 0x6A) {
                     acc1 = dwTmp ^ acc1;
                     if((acc1 & 1) > 0)
@@ -38,11 +36,11 @@
                 }
                 else if(cnt < 0x7F) {
                     if(dwTmp != (acc1 & 1))
-                        key[(cnt >> 3)] = (byte) ((1 << (cnt & 7)) ^ (bTmp & 0xFF));
+                        key[(cnt >> 3)] = (byte)((1 << (cnt & 7)) ^ (bTmp & 0xFF));
                     acc2 = (acc1 & 1) ^ acc2;
                 }
                 else if(dwTmp != acc2)
-                    key[0xF] = (byte) ((0x80 ^ bTmp) & 0xFF);
+                    key[0xF] = (byte)((0x80 ^ bTmp) & 0xFF);
             }
         }
 
@@ -57,12 +55,12 @@
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
             if(cpukey.Length > 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooLongKey);
-            VerifyCpuKey(BitConverter.ToUInt64(cpukey, 0), BitConverter.ToUInt64(cpukey, 8));
+            VerifyCpuKey(BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0)), BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8)));
         }
 
         public static void VerifyCpuKey(UInt64 cpukey0, UInt64 cpukey1) {
             var hamming = BitOperations.CountSetBits(cpukey0) + BitOperations.CountSetBits(cpukey1 & 0xFFFFFFFFFF030000);
-            if (hamming != 53)
+            if(hamming != 53)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
             var tmp = BitConverter.GetBytes(BitOperations.Swap(cpukey0));
             var key = new byte[0x10];
@@ -72,7 +70,7 @@
             var key2 = new byte[key.Length];
             Buffer.BlockCopy(key, 0, key2, 0, key.Length);
             CalculateCPUKeyECD(ref key2);
-            if (!BitOperations.CompareByteArrays(ref key, ref key2))
+            if(!BitOperations.CompareByteArrays(ref key, ref key2))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyECD);
         }
 
@@ -112,7 +110,6 @@
                 return false; // Key not found...
             }
         }
-
 
         public string GetCPUKeyFromTextFile(string file) {
             string cpukey;
