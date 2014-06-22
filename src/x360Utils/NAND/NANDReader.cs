@@ -9,6 +9,7 @@
         private readonly List<long> _badBlocks = new List<long>();
         private readonly BinaryReader _binaryReader;
         public readonly List<FsRootEntry> FsRootEntries = new List<FsRootEntry>();
+        public readonly List<MobileEntry> MobileEntries = new List<MobileEntry>();
         private readonly bool _doSendPosition;
         private bool _forcedSb;
 
@@ -180,12 +181,28 @@
                 if(NANDSpare.PageIsFsRoot(ref meta)) {
                     Debug.SendDebug("FSRoot found @ 0x{0:X} version: {1}", Position, NANDSpare.GetFsSequence(ref meta));
                     FsRootEntries.Add(new FsRootEntry(Position, NANDSpare.GetFsSequence(ref meta)));
+                    RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
                 }
-                RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
+                else {
+                    for(int i = 0; i < 31; i++) {
+                        RawSeek(0x200, SeekOrigin.Current);
+                        meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
+                        if (NANDSpare.IsMobilePage(ref meta)) {
+                            Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position, NANDSpare.GetFsSequence(ref meta));
+                            MobileEntries.Add(new MobileEntry(Position, NANDSpare.GetFsSequence(ref meta), NANDSpare.GetBlockType(ref meta)));
+
+                        }
+                    }
+                    RawSeek(0x200, SeekOrigin.Current);
+                }
             }
             if (FsRootEntries.Count > 0)
                 return;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+        }
+
+        public void ParseFsRoot(FsRootEntry fsRoot) {
+            
         }
 
         public long[] FindBadBlocks(bool forceSb = false) {
@@ -236,13 +253,33 @@
 
     public class FsRootEntry {
         public readonly long Offset;
+        public readonly long RawOffset;
         public readonly long Version;
 
         public FsRootEntry(long offset, long version) {
             Offset = offset;
+            RawOffset = (offset / 0x4000) * 0x4200;
             Version = version;
         }
 
-        public override string ToString() { return string.Format("FSRootEntry @ 0x{0:X} Version: {1}", Offset, Version); }
+        public override string ToString() { return string.Format("FSRootEntry @ 0x{0:X} (0x{1:X}) Version: {2}", Offset, RawOffset, Version); }
+    }
+
+    public class MobileEntry
+    {
+        public readonly long Offset;
+        public readonly long RawOffset;
+        public readonly long Version;
+        public readonly byte MobileType;
+
+        public MobileEntry(long offset, long version, byte mobileType)
+        {
+            Offset = offset;
+            RawOffset = (offset / 0x4000) * 0x4200;
+            Version = version;
+            MobileType = mobileType;
+        }
+
+        public override string ToString() { return string.Format("MobileEntry @ 0x{0:X} (0x{1:X}) Version: {2} Type: 0x{3:X}", Offset, RawOffset, Version, MobileType); }
     }
 }

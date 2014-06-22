@@ -448,8 +448,12 @@
             AddOutput("Testing FSRootScanner... {0}", Environment.NewLine);
             try {
                 reader.ScanForFsRoot();
+                AddOutput("FSRoots found:{0}", Environment.NewLine);
                 foreach(var fsRootEntry in reader.FsRootEntries)
                     AddOutput("{0}{1}", fsRootEntry, Environment.NewLine);
+                AddOutput("Mobiles found:{0}", Environment.NewLine);
+                foreach (var mobileEntry in reader.MobileEntries)
+                    AddOutput("{0}{1}", mobileEntry, Environment.NewLine);
             }
             catch(Exception ex) {
                 AddException(ex.ToString());

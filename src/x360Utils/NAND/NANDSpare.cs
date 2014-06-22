@@ -146,24 +146,16 @@
         }
 
         public static UInt16 GetLba(ref MetaData data, MetaType metaType) {
-            byte id0, id1;
             switch(metaType) {
                 case MetaType.MetaType0:
-                    id0 = data.Meta0.BlockID0;
-                    id1 = data.Meta0.BlockID1;
-                    break;
+                    return (ushort)(((data.Meta0.BlockID0 & 0xF) << 8) + data.Meta0.BlockID1);
                 case MetaType.MetaType1:
-                    id0 = data.Meta1.BlockID0;
-                    id1 = data.Meta1.BlockID1;
-                    break;
+                    return (ushort)(((data.Meta1.BlockID0 & 0xF) << 8) + (data.Meta1.BlockID1 & 0xFF));
                 case MetaType.MetaType2:
-                    id0 = data.Meta2.BlockID0;
-                    id1 = data.Meta2.BlockID1;
-                    break;
+                    return (ushort)(((data.Meta2.BlockID1 & 0xF) << 8) + (data.Meta2.BlockID1 & 0xFF));
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
-            return (ushort)(id0 << 8 | id1);
         }
 
         public static UInt16 GetLba(ref MetaData data) { return GetLba(ref data, data.MetaType); }
@@ -256,24 +248,16 @@
         //}
 
         public static UInt16 GetFsSize(ref MetaData data, MetaType metaType) {
-            byte fs0, fs1;
             switch(metaType) {
                 case MetaType.MetaType0:
-                    fs0 = data.Meta0.FsSize0;
-                    fs1 = data.Meta0.FsSize1;
-                    break;
+                    return (ushort)((data.Meta0.FsSize0 << 8) | data.Meta0.FsSize1);
                 case MetaType.MetaType1:
-                    fs0 = data.Meta1.FsSize0;
-                    fs1 = data.Meta1.FsSize1;
-                    break;
+                    return (ushort)(((data.Meta1.FsSize0 << 8) & 0xFF) | (data.Meta1.FsSize1 & 0xFF));
                 case MetaType.MetaType2:
-                    fs0 = data.Meta2.FsSize0;
-                    fs1 = data.Meta2.FsSize1;
-                    break;
+                    return (ushort)(((data.Meta2.FsSize0 & 0xFF) << 8) | (data.Meta2.FsSize1 & 0xFF));
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
-            return (ushort)(fs0 << 8 | fs1);
         }
 
         public static UInt16 GetFsSize(ref MetaData data) { return GetFsSize(ref data, data.MetaType); }
@@ -357,7 +341,8 @@
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
-            return (uint)(seq3 << 24 | seq2 << 16 | seq1 << 8 | seq0);
+            return (uint)(seq0 | (seq1 << 8) | (seq2 << 16));
+            //return (uint)(seq3 << 24 | seq2 << 16 | seq1 << 8 | seq0);
         }
 
         public static UInt32 GetFsSequence(ref MetaData data) { return GetFsSequence(ref data, data.MetaType); }
@@ -397,6 +382,18 @@
                     return GetBlockType(ref meta) == 0x30; // SB FS Root
                 case MetaType.MetaType2:
                     return GetBlockType(ref meta) == 0x2C; // BB FS Root
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
+        public static bool IsMobilePage(ref MetaData meta) {
+            switch(meta.MetaType) {
+                case MetaType.MetaType0:
+                case MetaType.MetaType1:
+                case MetaType.MetaType2:
+                    var type = GetBlockType(ref meta);
+                    return type >= 0x30 && type < 0x3F;
                 default:
                     throw new NotSupportedException();
             }
