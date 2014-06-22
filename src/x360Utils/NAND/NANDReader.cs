@@ -1,15 +1,16 @@
 ﻿namespace x360Utils.NAND {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
 
     public sealed class NANDReader: Stream {
+        public readonly List<FsRootEntry> FsRootEntries = new List<FsRootEntry>();
         public readonly bool HasSpare;
         public readonly NANDSpare.MetaType MetaType;
+        public readonly List<MobileEntry> MobileEntries = new List<MobileEntry>();
         private readonly List<long> _badBlocks = new List<long>();
         private readonly BinaryReader _binaryReader;
-        public readonly List<FsRootEntry> FsRootEntries = new List<FsRootEntry>();
-        public readonly List<MobileEntry> MobileEntries = new List<MobileEntry>();
         private readonly bool _doSendPosition;
         private bool _forcedSb;
 
@@ -39,6 +40,8 @@
                 //}
             }
             else {
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("\r\n");
                 Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4000));
                 _doSendPosition = true;
                 MetaType = NANDSpare.MetaType.MetaTypeNone;
@@ -144,9 +147,13 @@
 
         #endregion Overrides of Stream
 
+        public FsRootEntry FsRoot { get; private set; }
+
         public long RawLength { get { return _binaryReader.BaseStream.Length; } }
 
         public long RawPosition { get { return _binaryReader.BaseStream.Position; } set { RawSeek(value, SeekOrigin.Begin); } }
+
+        public MobileEntry[] MobileArray { get; private set; }
 
         private bool CheckForSpare() {
             RawSeek(0, SeekOrigin.Begin);
@@ -170,39 +177,140 @@
             return (tmp[0] == 0xFF && tmp[1] == 0x4F);
         }
 
-        public void ScanForFsRoot() {
-            if(!HasSpare)
-                throw new NotSupportedException();
-            if (FsRootEntries.Count > 0)
+        public void ScanForFsRootAndMobile() {
+            if(FsRootEntries.Count > 0)
                 return;
-            RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
-            for(; _binaryReader.BaseStream.Position < _binaryReader.BaseStream.Length - 0x10;) {
-                var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
-                if(NANDSpare.PageIsFsRoot(ref meta)) {
-                    Debug.SendDebug("FSRoot found @ 0x{0:X} version: {1}", Position, NANDSpare.GetFsSequence(ref meta));
-                    FsRootEntries.Add(new FsRootEntry(Position, NANDSpare.GetFsSequence(ref meta)));
-                    RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
-                }
-                else {
-                    for(int i = 0; i < 31; i++) {
-                        RawSeek(0x200, SeekOrigin.Current);
-                        meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
-                        if (NANDSpare.IsMobilePage(ref meta)) {
-                            Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position, NANDSpare.GetFsSequence(ref meta));
-                            MobileEntries.Add(new MobileEntry(Position, NANDSpare.GetFsSequence(ref meta), NANDSpare.GetBlockType(ref meta)));
+            if(!HasSpare) {
+                #region MMC (No Spare)
 
-                        }
-                    }
-                    RawSeek(0x200, SeekOrigin.Current);
+                if(Length < 0x2FF0000)
+                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
+                Seek(0x2FE8000, SeekOrigin.Begin); // Seek to MMC Anchor Block Offset
+                var buf = ReadBytes(0x4000);
+                var anchornum = NANDSpare.GetMMCAnchorVersion(ref buf);
+                buf = ReadBytes(0x4000);
+                if (NANDSpare.GetMMCAnchorVersion(ref buf) == anchornum && anchornum == 0)
+                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+                anchornum = (ushort)(NANDSpare.GetMMCAnchorVersion(ref buf) > anchornum ? 1 : 0);
+                if(anchornum == 0) {
+                    Seek(0x2FE8000, SeekOrigin.Begin); // Seek to MMC Anchor Block Offset
+                    buf = ReadBytes(0x4000); // We want the first anchor buffer
                 }
+                FsRootEntries.Add(new FsRootEntry(NANDSpare.GetMMCMobileBlock(ref buf, 0) * 0x4000, NANDSpare.GetMMCAnchorVersion(ref buf)));
+                for (byte i = 1; i < 0xF; i++) {
+                    MobileEntries.Add(new MobileEntry(NANDSpare.GetMMCMobileBlock(ref buf, i) * 0x4000, NANDSpare.GetMMCAnchorVersion(ref buf), NANDSpare.GetMMCMobileSize(ref buf, i) * 0x4000,
+                                                          (byte)(i + 0x30)));
+                }
+                #endregion
             }
-            if (FsRootEntries.Count > 0)
-                return;
-            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+            else {
+                #region NAND (With Spare)
+
+                #region FSRoot
+
+                RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
+                for(; _binaryReader.BaseStream.Position < _binaryReader.BaseStream.Length - 0x10;) {
+                    var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
+                    if(NANDSpare.PageIsFsRoot(ref meta)) {
+                        Debug.SendDebug("FSRoot found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
+                        FsRootEntries.Add(new FsRootEntry(Position - 0x200, NANDSpare.GetFsSequence(ref meta)));
+                        RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
+                    }
+                    else {
+                        if(NANDSpare.IsMobilePage(ref meta)) {
+                            Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
+                            MobileEntries.Add(new MobileEntry(Position - 0x200, ref meta));
+                        }
+                        for(var i = 0; i < 31; i++) {
+                            RawSeek(0x200, SeekOrigin.Current);
+                            meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
+                            if(NANDSpare.IsMobilePage(ref meta)) {
+                                Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsFreePages(ref meta));
+                                MobileEntries.Add(new MobileEntry(Position - 0x200, ref meta));
+                            }
+                        }
+                        RawSeek(0x200, SeekOrigin.Current);
+                    }
+                }
+
+                #endregion
+
+                #region Mobile*.dat
+
+                RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
+                for(; _binaryReader.BaseStream.Position < _binaryReader.BaseStream.Length - 0x10;) {
+                    var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
+                    if(NANDSpare.PageIsFsRoot(ref meta)) {
+                        RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
+                        continue; // Skip this one
+                    }
+
+                    if(NANDSpare.IsMobilePage(ref meta)) {
+                        Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
+                        MobileEntries.Add(new MobileEntry(Position - 0x200, ref meta));
+                        var size = NANDSpare.GetFsSize(ref meta);
+                        RawSeek(size / 0x200 * 0x210 - 0x10, SeekOrigin.Current);
+                        if(size % 0x200 > 0) // There's data still to be saved...
+                            RawSeek(0x210, SeekOrigin.Current); // Seek 1 page
+                        while(Position % 0x800 > 0) // We want to have an even 4 pages!
+                            RawSeek(0x210, SeekOrigin.Current); // Seek 1 page
+                    }
+                    else
+                        RawSeek(0x830, SeekOrigin.Current); // Skip 4 pages
+                }
+
+                #endregion
+
+                #endregion
+            }
+            RawSeek(0, SeekOrigin.Begin); //Reset the stream
+
+            if(FsRootEntries.Count <= 0)
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+            FindLatestFsRoot();
+            FillMobileArray();
         }
 
-        public void ParseFsRoot(FsRootEntry fsRoot) {
-            
+        private void FindLatestFsRoot() {
+            foreach(var fsRootEntry in FsRootEntries) {
+                if(FsRoot == null)
+                    FsRoot = fsRootEntry;
+                else if(fsRootEntry.Version >= FsRoot.Version)
+                    FsRoot = fsRootEntry;
+            }
+        }
+
+        private void FillMobileArray() {
+            var list = new List<MobileEntry>();
+            foreach(var mobileEntry in MobileEntries) {
+                if(list.Count > 0) {
+                    for(var i = 0; i < list.Count; i++) {
+                        if(mobileEntry.MobileType != list[i].MobileType || mobileEntry.Version < list[i].Version)
+                            continue;
+                        list.RemoveAt(i);
+                        list.Add(mobileEntry);
+                    }
+                }
+                if(list.Count > 0) {
+                    var addit = true;
+                    for(var i = 0; i < list.Count; i++) {
+                        if(mobileEntry.MobileType != list[i].MobileType)
+                            continue;
+                        addit = false;
+                        break;
+                    }
+                    if(addit)
+                        list.Add(mobileEntry);
+                }
+                else
+                    list.Add(mobileEntry);
+            }
+            MobileArray = list.ToArray();
+            list.Clear();
+            foreach(var mobileEntry in MobileArray)
+                if(mobileEntry.Offset != mobileEntry.Size)
+                    list.Add(mobileEntry);
+            MobileArray = list.ToArray();
         }
 
         public long[] FindBadBlocks(bool forceSb = false) {
@@ -235,6 +343,8 @@
             Debug.SendDebug("[RAW]Seeking to offset: 0x{0:X} origin: {1}", offset, origin);
             var ret = _binaryReader.BaseStream.Seek(offset, origin);
             Debug.SendDebug("[RAW]New position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            if (_doSendPosition)
+                Main.SendReaderBlock(RawPosition);
             return ret;
         }
 
@@ -247,6 +357,8 @@
 
         public int RawRead(byte[] buffer, int index, int count) {
             Debug.SendDebug("[RAW]Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
+            if (_doSendPosition)
+                Main.SendReaderBlock(Position + count);
             return _binaryReader.Read(buffer, index, count);
         }
     }
@@ -265,21 +377,32 @@
         public override string ToString() { return string.Format("FSRootEntry @ 0x{0:X} (0x{1:X}) Version: {2}", Offset, RawOffset, Version); }
     }
 
-    public class MobileEntry
-    {
+    public class MobileEntry {
+        public readonly byte MobileType;
         public readonly long Offset;
         public readonly long RawOffset;
+        public readonly int Size;
         public readonly long Version;
-        public readonly byte MobileType;
 
-        public MobileEntry(long offset, long version, byte mobileType)
-        {
+        internal MobileEntry(long offset, ref NANDSpare.MetaData meta) {
             Offset = offset;
-            RawOffset = (offset / 0x4000) * 0x4200;
-            Version = version;
-            MobileType = mobileType;
+            RawOffset = (offset / 0x200) * 0x210;
+            Version = NANDSpare.GetFsSequence(ref meta);
+            MobileType = NANDSpare.GetBlockType(ref meta);
+            Size = NANDSpare.GetFsSize(ref meta);
         }
 
-        public override string ToString() { return string.Format("MobileEntry @ 0x{0:X} (0x{1:X}) Version: {2} Type: 0x{3:X}", Offset, RawOffset, Version, MobileType); }
+        internal MobileEntry(long offset, long version, int size, byte mobileType) {
+            Offset = offset;
+            RawOffset = offset;
+            Version = version;
+            MobileType = mobileType;
+            Size = size;
+        }
+
+        public override string ToString() {
+            return string.Format("MobileEntry @ 0x{0:X} (0x{1:X} [0x{2:X}]) Version: {3} Type: 0x{4:X} (Mobile{5}.dat) Size: 0x{6:X}", Offset, RawOffset, RawOffset + 0x200, Version, MobileType,
+                                 Convert.ToChar(MobileType + 0x11), Size);
+        }
     }
 }

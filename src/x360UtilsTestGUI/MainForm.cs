@@ -1,5 +1,6 @@
 ﻿namespace x360UtilsTestGUI {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
     using System.IO;
@@ -156,7 +157,7 @@
             _sw = Stopwatch.StartNew();
             try {
                 using(var reader = new NANDReader(e.Argument as string)) {
-                    AddOutput("Grabbing Launch.ini from NAND: ");
+                    AddOutput("Grabbing Launch.ini from NAND:{0}", Environment.NewLine);
                     AddOutput("{0}{1}", Environment.NewLine, _x360NAND.GetLaunchIni(reader));
                 }
             }
@@ -220,7 +221,7 @@
             try {
                 using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing SMC_Config from NAND: ");
-                    var cfg = _x360NAND.GetSMCConfig(reader);
+                    var cfg = _x360NAND.GetSmcConfig(reader);
                     var config = new SMCConfig();
                     AddOutput("\r\nChecksum: {0}", config.GetCheckSum(ref cfg));
                     AddOutput("\r\nDVDRegion: {0}", config.GetDVDRegion(ref cfg));
@@ -254,7 +255,7 @@
             try {
                 using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing SMC from NAND: ");
-                    var data = _x360NAND.GetSMC(reader, true);
+                    var data = _x360NAND.GetSmc(reader, true);
                     var smc = new SMC();
                     var type = smc.GetType(ref data);
                     AddOutput("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data));
@@ -386,7 +387,7 @@
                 return;
             var fname = ofd.FileName;
             ofd.FileName = "cpukey.txt";
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var args = new EventArg<string, string>(fname, ofd.FileName);
             var bw = new BackgroundWorker();
@@ -399,12 +400,11 @@
                 var args = e.Argument as EventArg<string, string>;
                 if(args != null) {
                     using(var reader = new NANDReader(args.Data1)) {
-                        AddOutput("Looking for FCRT.bin in NAND: ");
+                        AddOutput("Looking for FCRT.bin in NAND:{0}", Environment.NewLine);
                         var data = _x360NAND.GetFCRT(reader);
-                        AddOutput("OK!{0}", Environment.NewLine);
                         var keyutils = new CpukeyUtils();
                         var key = keyutils.GetCPUKeyFromTextFile(args.Data2);
-                        AddOutput("Decrypting FCRT.bin...{0}", Environment.NewLine);
+                        AddOutput("{0}Decrypting FCRT.bin...{0}", Environment.NewLine);
                         var crypt = new Cryptography();
                         var dec = crypt.DecryptFCRT(ref data, StringUtils.HexToArray(key));
                         AddOutput("Verifying FCRT.bin... Result: ");
@@ -432,31 +432,32 @@
                 File.WriteAllLines(sfd.FileName, tbox.Lines);
         }
 
-        private void testFsRootScanbtn_Click(object sender, EventArgs e)
-        {
+        private void testFsRootScanbtn_Click(object sender, EventArgs e) {
             _sw = Stopwatch.StartNew();
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
-            bw.DoWork += testFsRootScanDoWork;
+            bw.DoWork += TestFsRootScanDoWork;
             bw.RunWorkerAsync(ofd.FileName);
         }
 
-        private void testFsRootScanDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
+        private void TestFsRootScanDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
             var reader = new NANDReader(doWorkEventArgs.Argument as string);
             AddOutput("Testing FSRootScanner... {0}", Environment.NewLine);
             try {
-                reader.ScanForFsRoot();
-                AddOutput("FSRoots found:{0}", Environment.NewLine);
-                foreach(var fsRootEntry in reader.FsRootEntries)
-                    AddOutput("{0}{1}", fsRootEntry, Environment.NewLine);
+                reader.ScanForFsRootAndMobile();
+                AddOutput("FSRoot found:{0}", Environment.NewLine);
+                AddOutput("{0}{1}", reader.FsRoot, Environment.NewLine);
                 AddOutput("Mobiles found:{0}", Environment.NewLine);
-                foreach (var mobileEntry in reader.MobileEntries)
+                foreach (var mobileEntry in reader.MobileArray)
                     AddOutput("{0}{1}", mobileEntry, Environment.NewLine);
             }
             catch(Exception ex) {
                 AddException(ex.ToString());
+            }
+            finally {
+                reader.Close();
             }
             AddDone();
         }

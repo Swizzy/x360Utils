@@ -10,33 +10,19 @@
         private readonly Cryptography _crypto = new Cryptography();
 
         public byte[] GetFCRT(NANDReader reader) {
-            reader.Seek(0x8000, SeekOrigin.Begin);
-            for(var i = -1; reader.Position < reader.Length; i = -1) {
-                var tmp = reader.ReadBytes(0x4000);
-                while(i + 1 < tmp.Length) {
-                    i++;
-                    if(tmp[i] != 0x66)
-                        continue;
-                    if(tmp.Length - i < 0x1c) {
-                        var pos = reader.Position;
-                        var tmp2 = reader.ReadBytes(0x23);
-                        reader.Seek(pos, SeekOrigin.Begin);
-                        if(i == tmp.Length) {
-                            Array.Resize(ref tmp, tmp.Length + tmp2.Length);
-                            Buffer.BlockCopy(tmp2, 0, tmp, i, tmp2.Length);
-                        }
-                        else {
-                            if(tmp2[0] != 0x63 || tmp2[1] != 0x72 || tmp2[2] != 0x74 || tmp2[3] != 0x2E || tmp2[4] != 0x62 || tmp2[5] != 0x69 || tmp2[6] != 0x6E)
-                                continue;
-                            Buffer.BlockCopy(tmp2, 0, tmp, i + 1, tmp2.Length);
-                        }
-                    }
-                    if(tmp[i + 1] != 0x63 || tmp[i + 2] != 0x72 || tmp[i + 3] != 0x74 || tmp[i + 4] != 0x2E || tmp[i + 5] != 0x62 || tmp[i + 6] != 0x69 || tmp[i + 7] != 0x6E)
-                        continue;
-                    Debug.SendDebug("FCRT.bin found @ 0x{0:X}", reader.Position + i);
-                    reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
-                    return reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
-                }
+            if(reader.FsRoot == null)
+                reader.ScanForFsRootAndMobile();
+            reader.Seek(reader.FsRoot.Offset, SeekOrigin.Begin);
+            var tmp = reader.ReadBytes(0x4000);
+            for(var i = 0; i < tmp.Length; i++) {
+                if(tmp[i] != 0x66)
+                    continue;
+                if(tmp[i + 1] != 0x63 || tmp[i + 2] != 0x72 || tmp[i + 3] != 0x74 || tmp[i + 4] != 0x2E || tmp[i + 5] != 0x62 || tmp[i + 6] != 0x69 || tmp[i + 7] != 0x6E)
+                    continue;
+                reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("FCRT.bin found @ 0x{0:X}", reader.Position);
+                return reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
             }
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "FCRT");
         }
@@ -69,7 +55,7 @@
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
-        public byte[] GetSMC(NANDReader reader, bool decrypted = false) {
+        public byte[] GetSmc(NANDReader reader, bool decrypted = false) {
             reader.Seek(0x78, SeekOrigin.Begin);
             var tmp = reader.ReadBytes(4);
             var size = BitOperations.Swap(BitConverter.ToUInt32(tmp, 0));
@@ -85,7 +71,7 @@
             return tmp;
         }
 
-        public byte[] GetSMCConfig(NANDReader reader) {
+        public byte[] GetSmcConfig(NANDReader reader) {
             if(reader.RawLength == 0x1080000) // 16MB NAND
                 reader.Seek(0xF7C000, SeekOrigin.Begin);
             else if(!reader.HasSpare) // MMC NAND
@@ -182,7 +168,7 @@
             }
         }
 
-        private static bool GetASCIIKey(NANDReader reader, int offset, out string key) {
+        private static bool GetAsciiKey(NANDReader reader, int offset, out string key) {
             Debug.SendDebug("Grabbing ASCII Key @ 0x{0:X}", offset);
             key = null;
             reader.Seek(offset, SeekOrigin.Begin);
@@ -216,7 +202,7 @@
                             if(!GetByteKey(reader, 0x95020, out key)) // Virtual Fuses
                             {
                                 string keys;
-                                if(!GetASCIIKey(reader, 0x600, out keys)) // xeBuild GUI ASCII Method
+                                if(!GetAsciiKey(reader, 0x600, out keys)) // xeBuild GUI ASCII Method
                                     throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
                                 return keys;
                             }
@@ -228,38 +214,21 @@
         }
 
         public string GetLaunchIni(NANDReader reader) {
-            //long[] fsblocks = new long[] { };
-            //var fsblockindex = 0;
-            //if(reader.HasSpare)
-            //    fsblocks = reader.FindFSBlocks();
-            //else
-            reader.Seek(0xC000, SeekOrigin.Begin);
-            for(var i = 0; reader.Position < reader.Length; i = 0 /*, fsblockindex++*/) {
-                //if (reader.HasSpare && fsblocks != null && fsblocks.Length < fsblockindex)
-                //    reader.Seek(fsblocks[fsblockindex], SeekOrigin.Begin);
-                //else if (reader.HasSpare && fsblocks != null && fsblocks.Length >= fsblockindex)
-                //    break; // We can't find it!
-                var tmp = reader.ReadBytes(0x4000); // read block
-                Debug.SendDebug("Searching for Launch.ini!");
-                for(; i < tmp.Length; i++) {
-                    if(tmp[i] != 0x6C)
-                        continue;
-                    if(tmp.Length - i < 0x1C) {
-                        Debug.SendDebug("Buffer is to small! expanding it...");
-                        var tmp2 = reader.ReadBytes(0x23);
-                        reader.Seek(tmp2.Length, SeekOrigin.Current);
-                        Array.Resize(ref tmp, tmp.Length + tmp2.Length);
-                        Buffer.BlockCopy(tmp2, 0, tmp, tmp.Length - tmp2.Length, tmp2.Length);
-                    }
-                    if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 ||
-                       tmp[i + 8] != tmp[i + 3] || tmp[i + 9] != tmp[i + 7])
-                        continue;
-                    if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Found launch.ini @ 0x{0:X}!", reader.Position + i);
-                    reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
-                    var data = reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
-                    return Encoding.ASCII.GetString(data);
-                }
+            if(reader.FsRoot == null)
+                reader.ScanForFsRootAndMobile();
+            reader.Seek(reader.FsRoot.Offset, SeekOrigin.Begin);
+            var tmp = reader.ReadBytes(0x4000); // read block
+            Debug.SendDebug("Searching for Launch.ini!");
+            for(var i = 0; i < tmp.Length; i++) {
+                if(tmp[i] != 0x6C)
+                    continue;
+                if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 || tmp[i + 8] != tmp[i + 3] ||
+                   tmp[i + 9] != tmp[i + 7])
+                    continue;
+                reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("Found launch.ini @ 0x{0:X}!", reader.Position);
+                return Encoding.ASCII.GetString(reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18))));
             }
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "Launch.ini");
         }

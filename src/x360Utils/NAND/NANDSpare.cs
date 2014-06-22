@@ -17,6 +17,12 @@
 
         //internal static readonly byte[] UnInitializedSpareBuffer = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
+        internal static ushort GetMMCAnchorVersion(ref byte[] data, int offset = 0) { return (ushort)(data[0x1A + offset] << 8 | data[0x1B + offset]); }
+
+        internal static ushort GetMMCMobileBlock(ref byte[] data, byte mobileType) { return (ushort)(data[0x1C + ((mobileType) * 4)] << 8 | data[0x1D + ((mobileType) * 4)]); }
+
+        internal static ushort GetMMCMobileSize(ref byte[] data, byte mobileType) { return (ushort)(data[0x1E + ((mobileType) * 4)] | data[0x1F + ((mobileType) * 4)] << 8); }
+
         public static void TestMetaUtils(string file) {
             var reader = new NANDReader(file);
             var metaType = reader.MetaType;
@@ -148,11 +154,11 @@
         public static UInt16 GetLba(ref MetaData data, MetaType metaType) {
             switch(metaType) {
                 case MetaType.MetaType0:
-                    return (ushort)(((data.Meta0.BlockID0 & 0xF) << 8) + data.Meta0.BlockID1);
+                    return (ushort)(((data.Meta0.BlockID0 & 0xF) << 8) | data.Meta0.BlockID1);
                 case MetaType.MetaType1:
-                    return (ushort)(((data.Meta1.BlockID0 & 0xF) << 8) + (data.Meta1.BlockID1 & 0xFF));
+                    return (ushort)(((data.Meta1.BlockID0 & 0xF) << 8) | (data.Meta1.BlockID1 & 0xFF));
                 case MetaType.MetaType2:
-                    return (ushort)(((data.Meta2.BlockID1 & 0xF) << 8) + (data.Meta2.BlockID1 & 0xFF));
+                    return (ushort)(((data.Meta2.BlockID0 & 0xF) << 8) | (data.Meta2.BlockID1 & 0xFF));
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
@@ -252,9 +258,9 @@
                 case MetaType.MetaType0:
                     return (ushort)((data.Meta0.FsSize0 << 8) | data.Meta0.FsSize1);
                 case MetaType.MetaType1:
-                    return (ushort)(((data.Meta1.FsSize0 << 8) & 0xFF) | (data.Meta1.FsSize1 & 0xFF));
+                    return (ushort)((data.Meta1.FsSize0 << 8) | data.Meta1.FsSize1);
                 case MetaType.MetaType2:
-                    return (ushort)(((data.Meta2.FsSize0 & 0xFF) << 8) | (data.Meta2.FsSize1 & 0xFF));
+                    return (ushort)((data.Meta2.FsSize0 << 8) | data.Meta2.FsSize1);
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
@@ -318,31 +324,16 @@
         //}
 
         public static UInt32 GetFsSequence(ref MetaData data, MetaType metaType) {
-            byte seq0, seq1, seq2, seq3;
             switch(metaType) {
                 case MetaType.MetaType0:
-                    seq0 = data.Meta0.FsSequence0;
-                    seq1 = data.Meta0.FsSequence1;
-                    seq2 = data.Meta0.FsSequence2;
-                    seq3 = data.Meta0.FsSequence3;
-                    break;
+                    return (uint)(data.Meta0.FsSequence0 | data.Meta0.FsSequence1 << 8 | data.Meta0.FsSequence2 << 16);
                 case MetaType.MetaType1:
-                    seq0 = data.Meta1.FsSequence0;
-                    seq1 = data.Meta1.FsSequence1;
-                    seq2 = data.Meta1.FsSequence2;
-                    seq3 = data.Meta1.FsSequence3;
-                    break;
+                    return (uint)(data.Meta1.FsSequence0 | data.Meta1.FsSequence1 << 8 | data.Meta1.FsSequence2 << 16);
                 case MetaType.MetaType2:
-                    seq0 = data.Meta2.FsSequence0;
-                    seq1 = data.Meta2.FsSequence1;
-                    seq2 = data.Meta2.FsSequence2;
-                    seq3 = 0;
-                    break;
+                    return (uint)(data.Meta2.FsSequence0 | data.Meta2.FsSequence1 << 8 | data.Meta2.FsSequence2 << 16);
                 default:
                     throw new NotSupportedException(string.Format("metaType: {0} is currently not supported!", metaType));
             }
-            return (uint)(seq0 | (seq1 << 8) | (seq2 << 16));
-            //return (uint)(seq3 << 24 | seq2 << 16 | seq1 << 8 | seq0);
         }
 
         public static UInt32 GetFsSequence(ref MetaData data) { return GetFsSequence(ref data, data.MetaType); }
