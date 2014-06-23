@@ -1,8 +1,8 @@
 ﻿namespace x360Utils.NAND {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
+    using x360Utils.Common;
 
     public sealed class NANDReader: Stream {
         public readonly List<FsRootEntry> FsRootEntries = new List<FsRootEntry>();
@@ -40,7 +40,7 @@
                 //}
             }
             else {
-                if (Main.VerifyVerbosityLevel(1))
+                if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\n");
                 Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4000));
                 _doSendPosition = true;
@@ -74,6 +74,8 @@
             Debug.SendDebug("Seeking to offset: 0x{0:X} origin: {1}", offset, origin);
             var ret = _binaryReader.BaseStream.Seek(offset, origin);
             Debug.SendDebug("New position: 0x{0:X}", _binaryReader.BaseStream.Position);
+            if(_doSendPosition)
+                Main.SendReaderBlock(Position);
             return ret;
         }
 
@@ -143,6 +145,8 @@
 
         public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
 
+        public override void WriteByte(byte value) { throw new NotSupportedException(); }
+
         public new void Close() { _binaryReader.Close(); }
 
         #endregion Overrides of Stream
@@ -185,22 +189,20 @@
 
                 if(Length < 0x2FF0000)
                     throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
-                Seek(0x2FE8000, SeekOrigin.Begin); // Seek to MMC Anchor Block Offset
-                var buf = ReadBytes(0x4000);
-                var anchornum = NANDSpare.GetMMCAnchorVersion(ref buf);
-                buf = ReadBytes(0x4000);
-                if (NANDSpare.GetMMCAnchorVersion(ref buf) == anchornum && anchornum == 0)
+                Seek(0x2FE8018, SeekOrigin.Begin); // Seek to MMC Anchor number offset
+                var ver1 = BitOperations.Swap(BitConverter.ToUInt32(ReadBytes(4), 0));
+                Seek(0x2FEC018, SeekOrigin.Begin); // Seek to MMC Anchor number offset
+                var ver2 = BitOperations.Swap(BitConverter.ToUInt32(ReadBytes(4), 0));
+                if(ver1 == 0 || ver2 == 0)
                     throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
-                anchornum = (ushort)(NANDSpare.GetMMCAnchorVersion(ref buf) > anchornum ? 1 : 0);
-                if(anchornum == 0) {
-                    Seek(0x2FE8000, SeekOrigin.Begin); // Seek to MMC Anchor Block Offset
-                    buf = ReadBytes(0x4000); // We want the first anchor buffer
+                Seek(ver1 > ver2 ? 0x2FE8000 : 0x2FEC000, SeekOrigin.Begin); // Seek to MMC Anchor Block Offset
+                var buf = ReadBytes(0x4000); // We want the first anchor buffer
+                FsRootEntries.Add(new FsRootEntry(NANDSpare.GetMmcMobileBlock(ref buf, 0) * 0x4000, 0, true));
+                for(byte i = 0x31; i < 0x3F; i++) {
+                    var size = NANDSpare.GetMmcMobileSize(ref buf, i);
+                    MobileEntries.Add(new MobileEntry(NANDSpare.GetMmcMobileBlock(ref buf, i) * 0x4000, 0, size > 0 ? size : 0x4000, i));
                 }
-                FsRootEntries.Add(new FsRootEntry(NANDSpare.GetMMCMobileBlock(ref buf, 0) * 0x4000, NANDSpare.GetMMCAnchorVersion(ref buf)));
-                for (byte i = 1; i < 0xF; i++) {
-                    MobileEntries.Add(new MobileEntry(NANDSpare.GetMMCMobileBlock(ref buf, i) * 0x4000, NANDSpare.GetMMCAnchorVersion(ref buf), NANDSpare.GetMMCMobileSize(ref buf, i) * 0x4000,
-                                                          (byte)(i + 0x30)));
-                }
+
                 #endregion
             }
             else {
@@ -307,9 +309,10 @@
             }
             MobileArray = list.ToArray();
             list.Clear();
-            foreach(var mobileEntry in MobileArray)
-                if(mobileEntry.Offset != mobileEntry.Size)
+            foreach(var mobileEntry in MobileArray) {
+                if(mobileEntry.Offset != 0)
                     list.Add(mobileEntry);
+            }
             MobileArray = list.ToArray();
         }
 
@@ -343,22 +346,22 @@
             Debug.SendDebug("[RAW]Seeking to offset: 0x{0:X} origin: {1}", offset, origin);
             var ret = _binaryReader.BaseStream.Seek(offset, origin);
             Debug.SendDebug("[RAW]New position: 0x{0:X}", _binaryReader.BaseStream.Position);
-            if (_doSendPosition)
-                Main.SendReaderBlock(RawPosition);
+            if(_doSendPosition)
+                Main.SendReaderBlock(Position);
             return ret;
         }
 
         public byte[] RawReadBytes(int count) {
             Debug.SendDebug("[RAW]Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
             if(_doSendPosition)
-                Main.SendReaderBlock(Position + count);
+                Main.SendReaderBlock(Position + ((count / 0x210) * 0x200));
             return _binaryReader.ReadBytes(count);
         }
 
         public int RawRead(byte[] buffer, int index, int count) {
             Debug.SendDebug("[RAW]Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
-            if (_doSendPosition)
-                Main.SendReaderBlock(Position + count);
+            if(_doSendPosition)
+                Main.SendReaderBlock(Position + ((count / 0x210) * 0x200));
             return _binaryReader.Read(buffer, index, count);
         }
     }
@@ -368,13 +371,15 @@
         public readonly long RawOffset;
         public readonly long Version;
 
-        public FsRootEntry(long offset, long version) {
+        public FsRootEntry(long offset, long version, bool isMmc = false) {
             Offset = offset;
-            RawOffset = (offset / 0x4000) * 0x4200;
+            RawOffset = !isMmc ? (offset / 0x200) * 0x210 : offset;
             Version = version;
         }
 
-        public override string ToString() { return string.Format("FSRootEntry @ 0x{0:X} (0x{1:X}) Version: {2}", Offset, RawOffset, Version); }
+        public override string ToString() {
+            return RawOffset != Offset ? string.Format("FSRootEntry @ 0x{0:X} (0x{1:X}) Version: {2}", Offset, RawOffset, Version) : string.Format("FSRootEntry @ 0x{0:X}", Offset);
+        }
     }
 
     public class MobileEntry {
@@ -401,8 +406,10 @@
         }
 
         public override string ToString() {
-            return string.Format("MobileEntry @ 0x{0:X} (0x{1:X} [0x{2:X}]) Version: {3} Type: 0x{4:X} (Mobile{5}.dat) Size: 0x{6:X}", Offset, RawOffset, RawOffset + 0x200, Version, MobileType,
-                                 Convert.ToChar(MobileType + 0x11), Size);
+            return RawOffset != Offset
+                       ? string.Format("MobileEntry @ 0x{0:X} (0x{1:X} [0x{2:X}]) Version: {3} Type: 0x{4:X} (Mobile{5}.dat) Size: 0x{6:X}", Offset, RawOffset, RawOffset + 0x200, Version, MobileType,
+                                       Convert.ToChar(MobileType + 0x11), Size)
+                       : string.Format("MobileEntry @ 0x{0:X} Version: {1} Type: 0x{2:X} (Mobile{3}.dat) Size: 0x{4:X}", Offset, Version, MobileType, Convert.ToChar(MobileType + 0x11), Size);
         }
     }
 }

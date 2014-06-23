@@ -17,11 +17,9 @@
 
         //internal static readonly byte[] UnInitializedSpareBuffer = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
-        internal static ushort GetMMCAnchorVersion(ref byte[] data, int offset = 0) { return (ushort)(data[0x1A + offset] << 8 | data[0x1B + offset]); }
+        internal static ushort GetMmcMobileBlock(ref byte[] data, byte mobileType) { return Common.BitOperations.Swap(BitConverter.ToUInt16(data, 0x1C + (mobileType * 0x4))); }
 
-        internal static ushort GetMMCMobileBlock(ref byte[] data, byte mobileType) { return (ushort)(data[0x1C + ((mobileType) * 4)] << 8 | data[0x1D + ((mobileType) * 4)]); }
-
-        internal static ushort GetMMCMobileSize(ref byte[] data, byte mobileType) { return (ushort)(data[0x1E + ((mobileType) * 4)] | data[0x1F + ((mobileType) * 4)] << 8); }
+        internal static ushort GetMmcMobileSize(ref byte[] data, byte mobileType) { return Common.BitOperations.Swap(BitConverter.ToUInt16(data, 0x1E + (mobileType * 0x4))); }
 
         public static void TestMetaUtils(string file) {
             var reader = new NANDReader(file);

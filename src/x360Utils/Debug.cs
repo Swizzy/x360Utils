@@ -3,6 +3,7 @@
     using System.Diagnostics;
 
     public static class Debug {
+        // ReSharper disable once EventNeverInvoked
         public static event EventHandler<EventArg<string>> DebugOutput;
 
         [Conditional("PRINTDEBUG")] [Conditional("DEBUG")] internal static void SendDebug(string message, params object[] args) {
