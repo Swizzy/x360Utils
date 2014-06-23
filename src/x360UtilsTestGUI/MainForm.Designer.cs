@@ -50,6 +50,7 @@
             this.TestFCRTbtn = new System.Windows.Forms.Button();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.testFsRootScanbtn = new System.Windows.Forms.Button();
+            this.TestFsParserbtn = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -274,7 +275,19 @@
             this.testFsRootScanbtn.TabIndex = 3;
             this.testFsRootScanbtn.Text = "Test FSRootScan";
             this.testFsRootScanbtn.UseVisualStyleBackColor = true;
-            this.testFsRootScanbtn.Click += new System.EventHandler(this.testFsRootScanbtn_Click);
+            this.testFsRootScanbtn.Click += new System.EventHandler(this.TestFsRootScanbtnClick);
+            // 
+            // TestFsParserbtn
+            // 
+            this.TestFsParserbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.TestFsParserbtn.Location = new System.Drawing.Point(727, 154);
+            this.TestFsParserbtn.Margin = new System.Windows.Forms.Padding(2);
+            this.TestFsParserbtn.Name = "TestFsParserbtn";
+            this.TestFsParserbtn.Size = new System.Drawing.Size(184, 23);
+            this.TestFsParserbtn.TabIndex = 6;
+            this.TestFsParserbtn.Text = "Test FSParser";
+            this.TestFsParserbtn.UseVisualStyleBackColor = true;
+            this.TestFsParserbtn.Click += new System.EventHandler(this.TestFsParserbtnClick);
             // 
             // MainForm
             // 
@@ -282,6 +295,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1112, 360);
             this.Controls.Add(this.progressBar1);
+            this.Controls.Add(this.TestFsParserbtn);
             this.Controls.Add(this.TestFCRTbtn);
             this.Controls.Add(this.outtab);
             this.Controls.Add(this.getsmcbtn);
@@ -330,6 +344,7 @@
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Button testFsRootScanbtn;
+        private System.Windows.Forms.Button TestFsParserbtn;
 
     }
 }

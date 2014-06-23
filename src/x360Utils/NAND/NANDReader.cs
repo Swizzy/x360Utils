@@ -368,30 +368,35 @@
 
     public class FsRootEntry {
         public readonly long Offset;
-        public readonly long RawOffset;
+        private readonly long _rawOffset;
         public readonly long Version;
 
         public FsRootEntry(long offset, long version, bool isMmc = false) {
             Offset = offset;
-            RawOffset = !isMmc ? (offset / 0x200) * 0x210 : offset;
+            _rawOffset = !isMmc ? (offset / 0x200) * 0x210 : offset;
             Version = version;
         }
 
         public override string ToString() {
-            return RawOffset != Offset ? string.Format("FSRootEntry @ 0x{0:X} (0x{1:X}) Version: {2}", Offset, RawOffset, Version) : string.Format("FSRootEntry @ 0x{0:X}", Offset);
+            return _rawOffset != Offset ? string.Format("FSRootEntry @ 0x{0:X} (0x{1:X}) Version: {2}", Offset, _rawOffset, Version) : string.Format("FSRootEntry @ 0x{0:X}", Offset);
+        }
+
+        public byte[] GetBlock(ref NANDReader reader) {
+            reader.Seek(Offset, SeekOrigin.Begin);
+            return reader.ReadBytes(0x4000);
         }
     }
 
     public class MobileEntry {
         public readonly byte MobileType;
         public readonly long Offset;
-        public readonly long RawOffset;
+        private readonly long _rawOffset;
         public readonly int Size;
         public readonly long Version;
 
         internal MobileEntry(long offset, ref NANDSpare.MetaData meta) {
             Offset = offset;
-            RawOffset = (offset / 0x200) * 0x210;
+            _rawOffset = (offset / 0x200) * 0x210;
             Version = NANDSpare.GetFsSequence(ref meta);
             MobileType = NANDSpare.GetBlockType(ref meta);
             Size = NANDSpare.GetFsSize(ref meta);
@@ -399,17 +404,22 @@
 
         internal MobileEntry(long offset, long version, int size, byte mobileType) {
             Offset = offset;
-            RawOffset = offset;
+            _rawOffset = offset;
             Version = version;
             MobileType = mobileType;
             Size = size;
         }
 
         public override string ToString() {
-            return RawOffset != Offset
-                       ? string.Format("MobileEntry @ 0x{0:X} (0x{1:X} [0x{2:X}]) Version: {3} Type: 0x{4:X} (Mobile{5}.dat) Size: 0x{6:X}", Offset, RawOffset, RawOffset + 0x200, Version, MobileType,
+            return _rawOffset != Offset
+                       ? string.Format("MobileEntry @ 0x{0:X} (0x{1:X} [0x{2:X}]) Version: {3} Type: 0x{4:X} (Mobile{5}.dat) Size: 0x{6:X}", Offset, _rawOffset, _rawOffset + 0x200, Version, MobileType,
                                        Convert.ToChar(MobileType + 0x11), Size)
                        : string.Format("MobileEntry @ 0x{0:X} Version: {1} Type: 0x{2:X} (Mobile{3}.dat) Size: 0x{4:X}", Offset, Version, MobileType, Convert.ToChar(MobileType + 0x11), Size);
+        }
+
+        public byte[] GetData(ref NANDReader reader) {
+            reader.Seek(Offset, SeekOrigin.Begin);
+            return reader.ReadBytes(Size);
         }
     }
 }
