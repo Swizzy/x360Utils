@@ -208,10 +208,12 @@
             else {
                 #region NAND (With Spare)
 
+                var maximumOffset = BitOperations.GetSmallest(_binaryReader.BaseStream.Length, 0x4200000); // Only read the filesystem area of BB NANDs (for faster processing)
+
                 #region FSRoot
 
                 RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
-                for(; _binaryReader.BaseStream.Position < _binaryReader.BaseStream.Length - 0x10;) {
+                for(; _binaryReader.BaseStream.Position < maximumOffset - 0x10;) {
                     var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
                     if(NANDSpare.PageIsFsRoot(ref meta)) {
                         Debug.SendDebug("FSRoot found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
@@ -240,7 +242,7 @@
                 #region Mobile*.dat
 
                 RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
-                for(; _binaryReader.BaseStream.Position < _binaryReader.BaseStream.Length - 0x10;) {
+                for(; _binaryReader.BaseStream.Position < maximumOffset - 0x10;) {
                     var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
                     if(NANDSpare.PageIsFsRoot(ref meta)) {
                         RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
@@ -368,8 +370,8 @@
 
     public class FsRootEntry {
         public readonly long Offset;
-        private readonly long _rawOffset;
         public readonly long Version;
+        private readonly long _rawOffset;
 
         public FsRootEntry(long offset, long version, bool isMmc = false) {
             Offset = offset;
@@ -390,9 +392,9 @@
     public class MobileEntry {
         public readonly byte MobileType;
         public readonly long Offset;
-        private readonly long _rawOffset;
         public readonly int Size;
         public readonly long Version;
+        private readonly long _rawOffset;
 
         internal MobileEntry(long offset, ref NANDSpare.MetaData meta) {
             Offset = offset;

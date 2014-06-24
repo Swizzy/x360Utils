@@ -51,6 +51,7 @@
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.testFsRootScanbtn = new System.Windows.Forms.Button();
             this.TestFsParserbtn = new System.Windows.Forms.Button();
+            this.ExtractCurrentFSbtn = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -249,7 +250,7 @@
             // TestFCRTbtn
             // 
             this.TestFCRTbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.TestFCRTbtn.Location = new System.Drawing.Point(727, 127);
+            this.TestFCRTbtn.Location = new System.Drawing.Point(728, 127);
             this.TestFCRTbtn.Margin = new System.Windows.Forms.Padding(2);
             this.TestFCRTbtn.Name = "TestFCRTbtn";
             this.TestFCRTbtn.Size = new System.Drawing.Size(184, 23);
@@ -280,7 +281,7 @@
             // TestFsParserbtn
             // 
             this.TestFsParserbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.TestFsParserbtn.Location = new System.Drawing.Point(727, 154);
+            this.TestFsParserbtn.Location = new System.Drawing.Point(728, 154);
             this.TestFsParserbtn.Margin = new System.Windows.Forms.Padding(2);
             this.TestFsParserbtn.Name = "TestFsParserbtn";
             this.TestFsParserbtn.Size = new System.Drawing.Size(184, 23);
@@ -288,6 +289,17 @@
             this.TestFsParserbtn.Text = "Test FSParser";
             this.TestFsParserbtn.UseVisualStyleBackColor = true;
             this.TestFsParserbtn.Click += new System.EventHandler(this.TestFsParserbtnClick);
+            // 
+            // ExtractCurrentFSbtn
+            // 
+            this.ExtractCurrentFSbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ExtractCurrentFSbtn.Location = new System.Drawing.Point(917, 154);
+            this.ExtractCurrentFSbtn.Name = "ExtractCurrentFSbtn";
+            this.ExtractCurrentFSbtn.Size = new System.Drawing.Size(183, 23);
+            this.ExtractCurrentFSbtn.TabIndex = 3;
+            this.ExtractCurrentFSbtn.Text = "Extract Current FS";
+            this.ExtractCurrentFSbtn.UseVisualStyleBackColor = true;
+            this.ExtractCurrentFSbtn.Click += new System.EventHandler(this.ExtractCurrentFSbtnClick);
             // 
             // MainForm
             // 
@@ -301,6 +313,7 @@
             this.Controls.Add(this.getsmcbtn);
             this.Controls.Add(this.getsmcconfigbtn);
             this.Controls.Add(this.getfusebtn);
+            this.Controls.Add(this.ExtractCurrentFSbtn);
             this.Controls.Add(this.testFsRootScanbtn);
             this.Controls.Add(this.testFUSEbtn);
             this.Controls.Add(this.MetaUtils);
@@ -345,6 +358,7 @@
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Button testFsRootScanbtn;
         private System.Windows.Forms.Button TestFsParserbtn;
+        private System.Windows.Forms.Button ExtractCurrentFSbtn;
 
     }
 }

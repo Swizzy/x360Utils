@@ -1,6 +1,5 @@
 ﻿namespace x360UtilsTestGUI {
     using System;
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
     using System.IO;
@@ -450,7 +449,7 @@
                 AddOutput("FSRoot found:{0}", Environment.NewLine);
                 AddOutput("{0}{1}", reader.FsRoot, Environment.NewLine);
                 AddOutput("Mobiles found:{0}", Environment.NewLine);
-                foreach (var mobileEntry in reader.MobileArray)
+                foreach(var mobileEntry in reader.MobileArray)
                     AddOutput("{0}{1}", mobileEntry, Environment.NewLine);
             }
             catch(Exception ex) {
@@ -462,11 +461,10 @@
             AddDone();
         }
 
-        private void TestFsParserbtnClick(object sender, EventArgs e)
-        {
+        private void TestFsParserbtnClick(object sender, EventArgs e) {
             _sw = Stopwatch.StartNew();
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
             bw.DoWork += TestFsParserDoWork;
@@ -475,8 +473,7 @@
 
         private void TestFsParserDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
             var reader = new NANDReader(doWorkEventArgs.Argument as string);
-            try
-            {
+            try {
                 AddOutput("Scanning for RootFS... {0}", Environment.NewLine);
                 reader.ScanForFsRootAndMobile();
                 AddOutput("Parsing RootFS @ 0x{0:X}...{1}", reader.FsRoot.Offset, Environment.NewLine);
@@ -486,12 +483,45 @@
                 foreach(var fileSystemEntry in entries)
                     AddOutput("{0}{1}", fileSystemEntry, Environment.NewLine);
             }
-            catch (Exception ex)
-            {
+            catch(Exception ex) {
                 AddException(ex.ToString());
             }
-            finally
-            {
+            finally {
+                reader.Close();
+            }
+            AddDone();
+        }
+
+        private void ExtractCurrentFSbtnClick(object sender, EventArgs e) {
+            _sw = Stopwatch.StartNew();
+            var ofd = new OpenFileDialog();
+            if(ofd.ShowDialog() != DialogResult.OK)
+                return;
+            var bw = new BackgroundWorker();
+            bw.DoWork += ExtractCurrentFSDoWork;
+            bw.RunWorkerAsync(ofd.FileName);
+        }
+
+        private void ExtractCurrentFSDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
+            var reader = new NANDReader(doWorkEventArgs.Argument as string);
+            try {
+                AddOutput("Scanning for RootFS... {0}", Environment.NewLine);
+                reader.ScanForFsRootAndMobile();
+                AddOutput("Parsing RootFS @ 0x{0:X}...{1}", reader.FsRoot.Offset, Environment.NewLine);
+                var fs = new NANDFileSystem();
+                var entries = fs.ParseFileSystem(ref reader);
+                AddOutput("FSEntries found: {0}{1}", entries.Length, Environment.NewLine);
+                var dir = (doWorkEventArgs.Argument as string) + "_ExtractedFS";
+                Directory.CreateDirectory(dir);
+                foreach(var fileSystemEntry in entries) {
+                    AddOutput("Extracting: {0}...{1}", fileSystemEntry.Filename, Environment.NewLine);
+                    File.WriteAllBytes(Path.Combine(dir, fileSystemEntry.Filename), fileSystemEntry.GetData(ref reader));
+                }
+            }
+            catch(Exception ex) {
+                AddException(ex.ToString());
+            }
+            finally {
                 reader.Close();
             }
             AddDone();
