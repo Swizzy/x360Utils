@@ -10,6 +10,7 @@
 
         public FileSystemEntry[] ParseFileSystem(ref NANDReader reader, FsRootEntry fsRoot) {
             var ret = new List<FileSystemEntry>();
+            reader.Seek(fsRoot.Offset, SeekOrigin.Begin);
             var bitmap = new byte[0x2000];
             var fsinfo = new byte[0x2000];
             for(var i = 0; i < 0x10; i++) {
@@ -22,7 +23,6 @@
             if(reader.MetaType == NANDSpare.MetaType.MetaType0 || reader.MetaType == NANDSpare.MetaType.MetaType1) {
                 #region 16MB NANDs
 
-                reader.Seek(fsRoot.Offset, SeekOrigin.Begin);
                 var offsets = new List<long>();
                 for(var i = 0; i < 0x10; i++) {
                     for(var j = 0; j < 0x10; j++) {
