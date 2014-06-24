@@ -6,6 +6,15 @@
     using x360Utils.Common;
 
     public class NANDFileSystem {
+        private static long GetBaseOffsetForMeta2(ref NANDReader reader) {
+            reader.RawSeek(reader.FsRoot.Offset / 0x200 * 0x210 + 0x200, SeekOrigin.Begin);
+            var meta = NANDSpare.GetMetaData(reader.RawReadBytes(0x10));
+            var reserved = 0x1E0;
+            reserved -= meta.Meta2.FsPageCount;
+            reserved -= meta.Meta2.FsSize0 << 2;
+            return (reserved * 8) * 0x4000;
+        }
+
         public FileSystemEntry[] ParseFileSystem(ref NANDReader reader) { return ParseFileSystem(ref reader, reader.FsRoot); }
 
         public FileSystemEntry[] ParseFileSystem(ref NANDReader reader, FsRootEntry fsRoot) {
@@ -32,7 +41,7 @@
                     while(true) {
                         start = BitOperations.Swap(BitConverter.ToUInt16(bitmap, start * 2));
                         //if(start == 0x1FFF || start == 0x1FFE)
-                        if (start *2 > bitmap.Length + 2)
+                        if(start * 2 > bitmap.Length + 2)
                             break;
                         blocks.Add(start);
                     }
@@ -76,11 +85,11 @@
             public byte[] GetData(ref NANDReader reader) {
                 var ret = new List<byte>();
                 var left = (int)Size;
-                var clusterSize = reader.MetaType != NANDSpare.MetaType.MetaType2 ? 0x4000 : 0x20000;
+                var baseOffset = reader.MetaType != NANDSpare.MetaType.MetaType2 ? 0 : GetBaseOffsetForMeta2(ref reader);
                 foreach(var offset in Blocks) {
-                    reader.Seek(offset * clusterSize, SeekOrigin.Begin);
-                    ret.AddRange(reader.ReadBytes(BitOperations.GetSmallest(left, clusterSize)));
-                    left -= BitOperations.GetSmallest(left, clusterSize);
+                    reader.Seek(baseOffset + (offset * 0x4000), SeekOrigin.Begin);
+                    ret.AddRange(reader.ReadBytes(BitOperations.GetSmallest(left, 0x4000)));
+                    left -= BitOperations.GetSmallest(left, 0x4000);
                 }
                 return ret.ToArray();
             }
