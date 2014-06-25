@@ -5,7 +5,7 @@
     using x360Utils.NAND;
 
     // ReSharper disable InconsistentNaming
-    internal class Xk3y {
+    public class Xk3y {
         private readonly Cryptography _crypto = new Cryptography();
         private readonly Keyvault _kvutils = new Keyvault();
         private readonly X360NAND _nand = new X360NAND();
@@ -44,7 +44,7 @@
                 var kv = _nand.GetKeyVault(nandReader, cpukey);
                 File.WriteAllText("dvd.txt", _kvutils.GetDVDKey(ref kv));
                 File.WriteAllText("cpu.txt", StringUtils.ArrayToHex(cpukey));
-                File.Create(TranslateOsigToFile(_kvutils.GetOSIGData(ref kv)));
+                File.WriteAllText(TranslateOsigToFile(_kvutils.GetOSIGData(ref kv)), "");
             }
             finally {
                 Directory.SetCurrentDirectory(origdir);

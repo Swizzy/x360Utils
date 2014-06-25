@@ -498,11 +498,11 @@
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
-            bw.DoWork += ExtractCurrentFSDoWork;
+            bw.DoWork += ExtractCurrentFsDoWork;
             bw.RunWorkerAsync(ofd.FileName);
         }
 
-        private void ExtractCurrentFSDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
+        private void ExtractCurrentFsDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
             var reader = new NANDReader(doWorkEventArgs.Argument as string);
             try {
                 AddOutput("Scanning for RootFS... {0}", Environment.NewLine);
@@ -526,5 +526,7 @@
             }
             AddDone();
         }
+
+        private void TestSpecialsbtnClick(object sender, EventArgs e) { new Specials().ShowDialog(); }
     }
 }

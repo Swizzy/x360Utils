@@ -5,7 +5,7 @@
     using x360Utils.Common;
     using x360Utils.NAND;
 
-    internal class JungleFlasher {
+    public class JungleFlasher {
         private readonly Cryptography _crypto = new Cryptography();
         private readonly Keyvault _kvutils = new Keyvault();
         private readonly X360NAND _nand = new X360NAND();

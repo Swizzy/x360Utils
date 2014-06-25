@@ -52,6 +52,7 @@
             this.testFsRootScanbtn = new System.Windows.Forms.Button();
             this.TestFsParserbtn = new System.Windows.Forms.Button();
             this.ExtractCurrentFSbtn = new System.Windows.Forms.Button();
+            this.TestSpecialsbtn = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -301,11 +302,22 @@
             this.ExtractCurrentFSbtn.UseVisualStyleBackColor = true;
             this.ExtractCurrentFSbtn.Click += new System.EventHandler(this.ExtractCurrentFSbtnClick);
             // 
+            // TestSpecialsbtn
+            // 
+            this.TestSpecialsbtn.Location = new System.Drawing.Point(728, 283);
+            this.TestSpecialsbtn.Name = "TestSpecialsbtn";
+            this.TestSpecialsbtn.Size = new System.Drawing.Size(372, 23);
+            this.TestSpecialsbtn.TabIndex = 8;
+            this.TestSpecialsbtn.Text = "Test Specials";
+            this.TestSpecialsbtn.UseVisualStyleBackColor = true;
+            this.TestSpecialsbtn.Click += new System.EventHandler(this.TestSpecialsbtnClick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1112, 360);
+            this.Controls.Add(this.TestSpecialsbtn);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.TestFsParserbtn);
             this.Controls.Add(this.TestFCRTbtn);
@@ -359,6 +371,7 @@
         private System.Windows.Forms.Button testFsRootScanbtn;
         private System.Windows.Forms.Button TestFsParserbtn;
         private System.Windows.Forms.Button ExtractCurrentFSbtn;
+        private System.Windows.Forms.Button TestSpecialsbtn;
 
     }
 }

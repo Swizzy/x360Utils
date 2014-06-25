@@ -11,11 +11,11 @@
                                                       };
 
         public static string ArrayToHex(IList<byte> value, int i = 0, int count = -1) {
-            var c = new char[value.Count * 2];
             if(count == -1)
                 count = value.Count - i;
             else
                 count = count + i;
+            var c = new char[count * 2];
             for(var p = 0; i < count;) {
                 var d = value[i++];
                 c[p++] = HexCharTable[d / 0x10];
