@@ -17,9 +17,9 @@
 
         #endregion
 
-        private static readonly byte[] BLKey = new byte[] {
-                                                              0xDD, 0x88, 0xAD, 0x0C, 0x9E, 0xD6, 0x69, 0xE7, 0xB5, 0x67, 0x94, 0xFB, 0x68, 0x56, 0x3E, 0xFA
-                                                          };
+        private static readonly byte[] BlKey = {
+                                                   0xDD, 0x88, 0xAD, 0x0C, 0x9E, 0xD6, 0x69, 0xE7, 0xB5, 0x67, 0x94, 0xFB, 0x68, 0x56, 0x3E, 0xFA
+                                               };
 
         public static void Rc4(ref byte[] bytes, byte[] key) {
             var s = new byte[256];
@@ -97,7 +97,7 @@
                 switch(type) {
                     case BLEncryptionTypes.Default:
                     case BLEncryptionTypes.CBB:
-                        inkey = BLKey;
+                        inkey = BlKey;
                         break;
                     case BLEncryptionTypes.MFGCBB:
                         inkey = new byte[0x10]; // 00's for key (MFG bootloader)
@@ -150,7 +150,7 @@
                 switch(type) {
                     case BLEncryptionTypes.Default:
                     case BLEncryptionTypes.CBB:
-                        inkey = BLKey;
+                        inkey = BlKey;
                         break;
                     case BLEncryptionTypes.MFGCBB:
                         inkey = new byte[0x10]; // 00's for key (MFG bootloader)
@@ -192,7 +192,7 @@
             #region Error Handling
 
             if(inkey == null)
-                inkey = BLKey;
+                inkey = BlKey;
             if(inkey.Length != 0x10)
                 throw new ArgumentOutOfRangeException("inkey");
 
