@@ -9,21 +9,14 @@
     public sealed class X360NAND {
         private readonly Cryptography _crypto = new Cryptography();
 
-        public byte[] GetFCRT(NANDReader reader) {
+        public byte[] GetFcrt(NANDReader reader) {
             if(reader.FsRoot == null)
                 reader.ScanForFsRootAndMobile();
-            reader.Seek(reader.FsRoot.Offset, SeekOrigin.Begin);
-            var tmp = reader.ReadBytes(0x4000);
-            for(var i = 0; i < tmp.Length; i++) {
-                if(tmp[i] != 0x66)
-                    continue;
-                if(tmp[i + 1] != 0x63 || tmp[i + 2] != 0x72 || tmp[i + 3] != 0x74 || tmp[i + 4] != 0x2E || tmp[i + 5] != 0x62 || tmp[i + 6] != 0x69 || tmp[i + 7] != 0x6E)
-                    continue;
-                reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
-                if (Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("FCRT.bin found @ 0x{0:X}", reader.Position);
-                return reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18)));
-            }
+            var nandfs = new NANDFileSystem();
+            var fs = nandfs.ParseFileSystem(ref reader);
+            foreach(var fileSystemEntry in fs)
+                if(fileSystemEntry.Filename.Equals("fcrt.bin", StringComparison.CurrentCultureIgnoreCase))
+                    return fileSystemEntry.GetData(ref reader);
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "FCRT");
         }
 
@@ -32,7 +25,7 @@
             if(!decrypted)
                 return reader.ReadBytes(0x4000);
             var kv = GetKeyVault(reader);
-            var cpukey = GetNANDCPUKey(reader);
+            var cpukey = GetNandCpuKey(reader);
             _crypto.DecryptKv(ref kv, cpukey);
             if(_crypto.VerifyKvDecrypted(ref kv, cpukey))
                 return kv;
@@ -80,7 +73,7 @@
                 reader.Seek(0x3BE0000, SeekOrigin.Begin);
             var data = reader.ReadBytes(0x400);
             try {
-                var cfg = new SMCConfig();
+                var cfg = new SmcConfig();
                 cfg.VerifySMCConfigChecksum(data);
             }
             catch(X360UtilsException ex) {
@@ -189,7 +182,7 @@
             }
         }
 
-        public string GetNANDCPUKey(NANDReader reader) {
+        public string GetNandCpuKey(NANDReader reader) {
             byte[] key;
             if(!GetByteKey(reader, 0x100, out key)) // Blakcat XeLL
             {
@@ -214,22 +207,13 @@
         }
 
         public string GetLaunchIni(NANDReader reader) {
-            if(reader.FsRoot == null)
+            if (reader.FsRoot == null)
                 reader.ScanForFsRootAndMobile();
-            reader.Seek(reader.FsRoot.Offset, SeekOrigin.Begin);
-            var tmp = reader.ReadBytes(0x4000); // read block
-            Debug.SendDebug("Searching for Launch.ini!");
-            for(var i = 0; i < tmp.Length; i++) {
-                if(tmp[i] != 0x6C)
-                    continue;
-                if(tmp[i + 1] != 0x61 || tmp[i + 2] != 0x75 || tmp[i + 3] != 0x6E || tmp[i + 4] != 0x63 || tmp[i + 5] != 0x68 || tmp[i + 6] != 0x2E || tmp[i + 7] != 0x69 || tmp[i + 8] != tmp[i + 3] ||
-                   tmp[i + 9] != tmp[i + 7])
-                    continue;
-                reader.Seek(BitOperations.Swap(BitConverter.ToUInt16(tmp, i + 0x16)) * 0x4000, SeekOrigin.Begin);
-                if (Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("Found launch.ini @ 0x{0:X}!", reader.Position);
-                return Encoding.ASCII.GetString(reader.ReadBytes((int)BitOperations.Swap(BitConverter.ToUInt32(tmp, i + 0x18))));
-            }
+            var nandfs = new NANDFileSystem();
+            var fs = nandfs.ParseFileSystem(ref reader);
+            foreach (var fileSystemEntry in fs)
+                if (fileSystemEntry.Filename.Equals("launch.ini", StringComparison.CurrentCultureIgnoreCase))
+                    return Encoding.ASCII.GetString(fileSystemEntry.GetData(ref reader));
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound, "Launch.ini");
         }
     }

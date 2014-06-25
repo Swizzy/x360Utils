@@ -79,6 +79,8 @@
     <Compile Include="Network\XeLLNetworkException.cs" />
     <Compile Include="Network\XeLLNetworkScanner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Specials\JungleFlasher.cs" />
+    <Compile Include="Specials\Xk3y.cs" />
     <Compile Include="x360UtilsException.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -87,7 +89,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties BuildVersion_UpdateFileVersion="True" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_BuildVersioningStyle="None.None.Increment.None" />
+      <UserProperties BuildVersion_BuildVersioningStyle="None.None.Increment.None" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_UpdateFileVersion="True" />
     </VisualStudio>
   </ProjectExtensions>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

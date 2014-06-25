@@ -36,6 +36,12 @@
 
         public string GetDVDKey(ref byte[] keyvaultdata) { return StringUtils.ArrayToHex(keyvaultdata, 0x100, 0x10); }
 
+        public byte[] GetDVDKeyBytes(ref byte[] keyvaultdata) {
+            var ret = new byte[0x10];
+            Buffer.BlockCopy(keyvaultdata, 0x100, ret, 0, ret.Length);
+            return ret;
+        }
+
         public string GetConsoleID(ref byte[] keyvaultdata) { return StringUtils.ArrayToHex(keyvaultdata, 0x9CA, 0x6); }
 
         public string GetMfrDate(ref byte[] keyvaultdata, DateFormats format) {

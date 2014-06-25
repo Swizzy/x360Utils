@@ -6,30 +6,30 @@
     using System.Text.RegularExpressions;
     using x360Utils.Common;
 
-    public sealed class SMCConfig {
+    public sealed class SmcConfig {
         #region SMCConfigFans enum
 
-        public enum SMCConfigFans {
-            CPU = 0x11,
-            GPU = 0x12
+        public enum SmcConfigFans {
+            Cpu = 0x11,
+            Gpu = 0x12
         }
 
         #endregion
 
         #region SMCConfigTemps enum
 
-        public enum SMCConfigTemps {
-            CPU = 0x29,
-            CPUMax = 0x2C,
-            GPU = 0x2A,
-            GPUMax = 0x2D,
-            RAM = 0x2B,
-            RAMMax = 0x2E
+        public enum SmcConfigTemps {
+            Cpu = 0x29,
+            CpuMax = 0x2C,
+            Gpu = 0x2A,
+            GpuMax = 0x2D,
+            Ram = 0x2B,
+            RamMax = 0x2E
         }
 
         #endregion
 
-        private static uint CalculateSMCCheckSum(IList<byte> smcConfig) {
+        private static uint CalculateSmcCheckSum(IList<byte> smcConfig) {
             uint i, len, sum = 0;
             for(i = 0, len = 252; i < len; i++)
                 sum += (uint)smcConfig[(int)(i + 0x10)] & 0xFF;
@@ -38,7 +38,7 @@
 
         public void VerifySMCConfigChecksum(byte[] smcconfigdata) {
             var checkSum = BitConverter.ToUInt16(smcconfigdata, 0);
-            var calculatedCheckSum = CalculateSMCCheckSum(smcconfigdata);
+            var calculatedCheckSum = CalculateSmcCheckSum(smcconfigdata);
             if(checkSum == calculatedCheckSum)
                 return;
             if(Main.VerifyVerbosityLevel(1))
@@ -46,9 +46,9 @@
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadChecksum);
         }
 
-        public string GetTempString(ref byte[] smcconfigdata, SMCConfigTemps temp) { return string.Format("{0}°C", smcconfigdata[(int)temp]); }
+        public string GetTempString(ref byte[] smcconfigdata, SmcConfigTemps temp) { return string.Format("{0}°C", smcconfigdata[(int)temp]); }
 
-        public string GetFanSpeed(ref byte[] smcconfigdata, SMCConfigFans fan) {
+        public string GetFanSpeed(ref byte[] smcconfigdata, SmcConfigFans fan) {
             switch(smcconfigdata[(int)fan] & 128) {
                 case 0:
                 case 127:
@@ -81,7 +81,7 @@
                 case 'x':
                 case 'Y':
                 case 'y':
-                    return string.Format("{0} Button", code.ToString().ToUpper());
+                    return string.Format("{0} Button", code.ToString(CultureInfo.InvariantCulture).ToUpper());
                 case 'D':
                 case 'd':
                     return "D-PAD Down";

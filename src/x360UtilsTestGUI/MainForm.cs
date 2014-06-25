@@ -106,7 +106,7 @@
             try {
                 using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing CPUKey from NAND: ");
-                    AddOutput(_x360NAND.GetNANDCPUKey(reader));
+                    AddOutput(_x360NAND.GetNandCpuKey(reader));
                 }
             }
             catch(X360UtilsException ex) {
@@ -221,19 +221,19 @@
                 using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing SMC_Config from NAND: ");
                     var cfg = _x360NAND.GetSmcConfig(reader);
-                    var config = new SMCConfig();
+                    var config = new SmcConfig();
                     AddOutput("\r\nChecksum: {0}", config.GetCheckSum(ref cfg));
                     AddOutput("\r\nDVDRegion: {0}", config.GetDVDRegion(ref cfg));
-                    AddOutput("\r\nCPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.CPU));
-                    AddOutput("\r\nGPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SMCConfig.SMCConfigFans.GPU));
+                    AddOutput("\r\nCPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SmcConfig.SmcConfigFans.Cpu));
+                    AddOutput("\r\nGPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SmcConfig.SmcConfigFans.Gpu));
                     AddOutput("\r\nGameRegion: {0}", config.GetGameRegion(ref cfg));
                     AddOutput("\r\nMACAdress: {0}", config.GetMACAdress(ref cfg));
-                    AddOutput("\r\nCPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPU));
-                    AddOutput("\r\nCPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.CPUMax));
-                    AddOutput("\r\nGPUTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPU));
-                    AddOutput("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.GPUMax));
-                    AddOutput("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAM));
-                    AddOutput("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SMCConfig.SMCConfigTemps.RAMMax));
+                    AddOutput("\r\nCPUTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Cpu));
+                    AddOutput("\r\nCPUMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.CpuMax));
+                    AddOutput("\r\nGPUTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Gpu));
+                    AddOutput("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.GpuMax));
+                    AddOutput("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Ram));
+                    AddOutput("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.RamMax));
                     AddOutput("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg));
                     AddOutput("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg));
                 }
@@ -255,12 +255,12 @@
                 using(var reader = new NANDReader(ofd.FileName)) {
                     AddOutput("Grabbing SMC from NAND: ");
                     var data = _x360NAND.GetSmc(reader, true);
-                    var smc = new SMC();
+                    var smc = new Smc();
                     var type = smc.GetType(ref data);
                     AddOutput("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data));
                     AddOutput("\r\nSMC Type: {0}", type);
-                    if(type == SMC.SMCTypes.Jtag || type == SMC.SMCTypes.RJtag)
-                        SMC.JTAGSMCPatches.AnalyseSMC(ref data);
+                    if(type == Smc.SmcTypes.Jtag || type == Smc.SmcTypes.RJtag)
+                        Smc.JtagsmcPatches.AnalyseSmc(ref data);
                     AddOutput("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No");
                 }
             }
@@ -400,7 +400,7 @@
                 if(args != null) {
                     using(var reader = new NANDReader(args.Data1)) {
                         AddOutput("Looking for FCRT.bin in NAND:{0}", Environment.NewLine);
-                        var data = _x360NAND.GetFCRT(reader);
+                        var data = _x360NAND.GetFcrt(reader);
                         var keyutils = new CpukeyUtils();
                         var key = keyutils.GetCPUKeyFromTextFile(args.Data2);
                         AddOutput("{0}Decrypting FCRT.bin...{0}", Environment.NewLine);

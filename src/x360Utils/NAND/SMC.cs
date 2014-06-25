@@ -1,10 +1,10 @@
 ﻿namespace x360Utils.NAND {
     using System;
 
-    public sealed class SMC {
+    public sealed class Smc {
         #region SMCTypes enum
 
-        public enum SMCTypes {
+        public enum SmcTypes {
             Unkown = -1,
             Retail = 0,
             Glitch = 1,
@@ -18,17 +18,17 @@
 
         #region TMSTDIValues enum
 
-        public enum TMSTDIValues: byte {
+        public enum TmsTdiValues: byte {
             None = 0x00,
             ArgonData = 0x83,
-            DB1F1 = 0xC0,
+            Db1F1 = 0xC0,
             AudClamp = 0xCC,
             TrayOpen = 0xCF
         }
 
         #endregion
 
-        public JTAGSMCPatches JTAGPatches = new JTAGSMCPatches();
+        public JtagsmcPatches JtagPatches = new JtagsmcPatches();
 
         private static void DecryptCheck(ref byte[] data) {
             if(!Cryptography.VerifySmcDecrypted(ref data))
@@ -62,8 +62,8 @@
             }
         }
 
-        public SMCTypes GetType(ref byte[] smcdata) {
-            var ret = SMCTypes.Unkown;
+        public SmcTypes GetType(ref byte[] smcdata) {
+            var ret = SmcTypes.Unkown;
             var glitchPatched = false;
             var retail = false;
             for(var i = 0; i < smcdata.Length - 6; i++) {
@@ -87,7 +87,7 @@
                     case 0x78:
                         /* Cygnos */
                         if((smcdata[i + 1] == 0xBA) && (smcdata[i + 2] == 0xB6)) {
-                            ret = SMCTypes.Cygnos;
+                            ret = SmcTypes.Cygnos;
                             if(Main.VerifyVerbosityLevel(1))
                                 Main.SendInfo("Found Cygnos bytes @ 0x{0:X}\n", i);
                         }
@@ -97,26 +97,26 @@
                         if((smcdata[i + 1] == 0x00) && (smcdata[i + 2] == 0x00) && (smcdata[i + 3] == 0x1B)) {
                             if(Main.VerifyVerbosityLevel(1))
                                 Main.SendInfo("Found JTAG bytes @ 0x{0:X}\n", i);
-                            ret = SMCTypes.Jtag;
+                            ret = SmcTypes.Jtag;
                         }
                         break;
                 }
             }
             if(glitchPatched && !retail) {
                 switch(ret) {
-                    case SMCTypes.Jtag:
+                    case SmcTypes.Jtag:
                         if(Main.VerifyVerbosityLevel(1))
                             Main.SendInfo("Image has both Glitch and JTAG patches\n");
-                        return SMCTypes.RJtag;
-                    case SMCTypes.Cygnos:
+                        return SmcTypes.RJtag;
+                    case SmcTypes.Cygnos:
                         if(Main.VerifyVerbosityLevel(1))
                             Main.SendInfo("Image has both Glitch and Cygnos patches\n");
-                        return SMCTypes.RJtagCygnos;
+                        return SmcTypes.RJtagCygnos;
                     default:
-                        return SMCTypes.Glitch;
+                        return SmcTypes.Glitch;
                 }
             }
-            return ret == SMCTypes.Unkown && retail ? SMCTypes.Retail : ret;
+            return ret == SmcTypes.Unkown && retail ? SmcTypes.Retail : ret;
         }
 
         public bool GlitchPatch(ref byte[] smcdata) {
@@ -155,17 +155,17 @@
 
         #region Nested type: JTAGSMCPatches
 
-        public sealed class JTAGSMCPatches {
-            public static void AnalyseSMC(ref byte[] smcdata, bool verbose = false) {
-                Main.SendInfo("\r\nDMA Read Hack: {0}", FindDMAReadHack(ref smcdata) ? "Yes" : "No");
-                Main.SendInfo("\r\nGPU JTAG Hack: {0}", FindGPUJtagHack(ref smcdata) ? "Yes" : "No");
-                Main.SendInfo("\r\nPCI Mask Bug: {0}", FindAndFixPCIMaskBug(ref smcdata) ? "Yes (Fixed if data is saved)" : "No");
-                Main.SendInfo("\r\nPlay 'n' Charge Patch: {0}", FindPNCCharge(ref smcdata) ? "Yes" : "No");
-                Main.SendInfo("\r\nPlay 'n' Charge when off Disabled: {0}", FindPNCNoCharge(ref smcdata) ? "Yes" : "No");
+        public sealed class JtagsmcPatches {
+            public static void AnalyseSmc(ref byte[] smcdata, bool verbose = false) {
+                Main.SendInfo("\r\nDMA Read Hack: {0}", FindDmaReadHack(ref smcdata) ? "Yes" : "No");
+                Main.SendInfo("\r\nGPU JTAG Hack: {0}", FindGpuJtagHack(ref smcdata) ? "Yes" : "No");
+                Main.SendInfo("\r\nPCI Mask Bug: {0}", FindAndFixPciMaskBug(ref smcdata) ? "Yes (Fixed if data is saved)" : "No");
+                Main.SendInfo("\r\nPlay 'n' Charge Patch: {0}", FindPncCharge(ref smcdata) ? "Yes" : "No");
+                Main.SendInfo("\r\nPlay 'n' Charge when off Disabled: {0}", FindPncNoCharge(ref smcdata) ? "Yes" : "No");
                 Main.SendInfo("\r\nUnconditional Boot Patch: {0}", FindUnconditionalBoot(ref smcdata) ? "Yes" : "No");
-                TMSTDIValues tms = TMSTDIValues.None, tdi = TMSTDIValues.None;
+                TmsTdiValues tms = TmsTdiValues.None, tdi = TmsTdiValues.None;
                 try {
-                    tms = (TMSTDIValues)GetTMS(ref smcdata);
+                    tms = (TmsTdiValues)GetTms(ref smcdata);
                     if(verbose)
                         Main.SendInfo("\r\nTMS Patch: {0}", tms);
                 }
@@ -177,13 +177,13 @@
                 }
                 for(var i = 0; i < 4; i++) {
                     try {
-                        if(tdi == TMSTDIValues.None) {
-                            tdi = (TMSTDIValues)GetTDI(ref smcdata, i);
+                        if(tdi == TmsTdiValues.None) {
+                            tdi = (TmsTdiValues)GetTdi(ref smcdata, i);
                             if(verbose)
                                 Main.SendInfo("\r\nTDI{1} Patch: {0}", tdi, i);
                         }
                         else if(verbose)
-                            Main.SendInfo("\r\nTDI{1} Patch: {0}", (TMSTDIValues)GetTDI(ref smcdata, i), i);
+                            Main.SendInfo("\r\nTDI{1} Patch: {0}", (TmsTdiValues)GetTdi(ref smcdata, i), i);
                     }
                     catch(X360UtilsException ex) {
                         if(ex.ErrorCode == X360UtilsException.X360UtilsErrors.DataNotFound && verbose)
@@ -194,31 +194,31 @@
                 }
                 Debug.SendDebug("TMS: {0} TDI: {1}", tms, tdi);
                 switch(tms) {
-                    case TMSTDIValues.None:
-                        if(tdi == TMSTDIValues.DB1F1)
+                    case TmsTdiValues.None:
+                        if(tdi == TmsTdiValues.Db1F1)
                             Main.SendInfo("\r\nTMS & TDI Matches Xenon \"Normal\" Patchset");
                         else {
                             Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
                             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
                         }
                         break;
-                    case TMSTDIValues.ArgonData:
-                        if(tdi == TMSTDIValues.DB1F1)
+                    case TmsTdiValues.ArgonData:
+                        if(tdi == TmsTdiValues.Db1F1)
                             Main.SendInfo("\r\n TMS & TDI Matches Zephyr, Falcon & Jasper \"Normal\" Patchset");
                         else {
                             Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
                             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
                         }
                         break;
-                    case TMSTDIValues.DB1F1:
+                    case TmsTdiValues.Db1F1:
                         Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
                         throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
-                    case TMSTDIValues.AudClamp:
+                    case TmsTdiValues.AudClamp:
                         switch(tdi) {
-                            case TMSTDIValues.DB1F1:
+                            case TmsTdiValues.Db1F1:
                                 Main.SendInfo("\r\n TMS & TDI Matches Zephyr, Falcon & Jasper \"Aud_Clamp\" Patchset");
                                 break;
-                            case TMSTDIValues.TrayOpen:
+                            case TmsTdiValues.TrayOpen:
                                 Main.SendInfo("\r\n TMS & TDI Matches Zephyr, Falcon & Jasper \"Aud_Clamp + Eject\" Patchset");
                                 break;
                             default:
@@ -226,7 +226,7 @@
                                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
                         }
                         break;
-                    case TMSTDIValues.TrayOpen:
+                    case TmsTdiValues.TrayOpen:
                         Main.SendInfo("\r\nUnknown TMS & TDI Patchset!");
                         throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownPatchset);
                     default:
@@ -249,7 +249,7 @@
                 return false;
             }
 
-            public static byte GetTMS(ref byte[] smcdata) {
+            public static byte GetTms(ref byte[] smcdata) {
                 DecryptCheck(ref smcdata);
                 for(var i = 0; i < smcdata.Length; i++) {
                     if(smcdata[i] != 0xD2)
@@ -258,13 +258,13 @@
                        smcdata[i + 8] != 0xC2)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 1], smcdata[i + 1]);
+                        Main.SendInfo("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
                     return smcdata[i + 1];
                 }
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
             }
 
-            public static byte GetTDI(ref byte[] smcdata, int num) {
+            public static byte GetTdi(ref byte[] smcdata, int num) {
                 DecryptCheck(ref smcdata);
                 switch(num) {
                     case 0:
@@ -272,7 +272,7 @@
                             if(smcdata[i] != 0x92 || smcdata[i + 4] != 0xDF || smcdata[i + 5] != 0xF8 || smcdata[i + 6] != 0x22)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI0 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 1], smcdata[i + 1]);
+                                Main.SendInfo("TDI0 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
                             return smcdata[i + 1];
                         }
                         break;
@@ -281,7 +281,7 @@
                             if(smcdata[i] != 0xC2 || smcdata[i + 2] != 0x74 || smcdata[i + 3] != 0x02 || smcdata[i + 8] != 0x74 || smcdata[i + 8] != 0x02)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI1 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 1], smcdata[i + 1]);
+                                Main.SendInfo("TDI1 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
                             return smcdata[i + 1];
                         }
                         break;
@@ -290,7 +290,7 @@
                             if(smcdata[i] != 0x7F || smcdata[i + 1] != 0x01 || smcdata[i + 4] != 0xC2 || smcdata[i + 6] != 0x74 || smcdata[i + 7] != 0x01)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI2 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 5], smcdata[i + 5]);
+                                Main.SendInfo("TDI2 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 5], smcdata[i + 5]);
                             return smcdata[i + 5];
                         }
                         break;
@@ -299,7 +299,7 @@
                             if(smcdata[i] != 0x76 || smcdata[i + 2] != 0x78 || smcdata[i + 4] != 0x76 || smcdata[i + 6] != 0xD2)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI3 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)smcdata[i + 7], smcdata[i + 7]);
+                                Main.SendInfo("TDI3 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 7], smcdata[i + 7]);
                             return smcdata[i + 7];
                         }
                         break;
@@ -309,7 +309,7 @@
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
             }
 
-            public static bool FindDMAReadHack(ref byte[] smcdata) {
+            public static bool FindDmaReadHack(ref byte[] smcdata) {
                 DecryptCheck(ref smcdata);
                 for(var i = 0; i < smcdata.Length - 6; i++) {
                     if(smcdata[i] != 0xB4)
@@ -323,7 +323,7 @@
                 return false;
             }
 
-            public static bool FindGPUJtagHack(ref byte[] smcdata) {
+            public static bool FindGpuJtagHack(ref byte[] smcdata) {
                 DecryptCheck(ref smcdata);
                 for(var i = 0; i < smcdata.Length - 6; i++) {
                     if(smcdata[i] != 0xD0)
@@ -337,7 +337,7 @@
                 return false;
             }
 
-            public static bool FindAndFixPCIMaskBug(ref byte[] smcdata) {
+            public static bool FindAndFixPciMaskBug(ref byte[] smcdata) {
                 DecryptCheck(ref smcdata);
                 for(var i = 0; i < smcdata.Length - 8; i++) {
                     if(smcdata[i] != 0x24)
@@ -354,7 +354,7 @@
                 return false;
             }
 
-            public static bool FindPNCCharge(ref byte[] smcdata) {
+            public static bool FindPncCharge(ref byte[] smcdata) {
                 DecryptCheck(ref smcdata);
                 for(var i = 0; i < smcdata.Length - 8; i++) {
                     if(smcdata[i] != 0x20)
@@ -369,7 +369,7 @@
                 return false;
             }
 
-            public static bool FindPNCNoCharge(ref byte[] smcdata) {
+            public static bool FindPncNoCharge(ref byte[] smcdata) {
                 DecryptCheck(ref smcdata);
                 for(var i = 0; i < smcdata.Length - 8; i++) {
                     if(smcdata[i] != 0xD0)
@@ -383,7 +383,7 @@
                 return false;
             }
 
-            public static bool SetTMS(ref byte[] smcdata, byte tms) {
+            public static bool SetTms(ref byte[] smcdata, byte tms) {
                 DecryptCheck(ref smcdata);
                 var patched = false;
                 for(var i = 0; i < smcdata.Length; i++) {
@@ -394,12 +394,12 @@
                     smcdata[i + 9] = tms;
                     patched = true;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("TMS Patched @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TMSTDIValues)tms, tms);
+                        Main.SendInfo("TMS Patched @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)tms, tms);
                 }
                 return patched;
             }
 
-            public static bool SetTDI(ref byte[] smcdata, byte tdi, int num = -1) {
+            public static bool SetTdi(ref byte[] smcdata, byte tdi, int num = -1) {
                 DecryptCheck(ref smcdata);
                 var patched = false;
                 switch(num) {
@@ -407,7 +407,7 @@
                         Main.SendInfo("Patching TDI in all 4 places...\n");
                         var ret = false;
                         for(var i = 0; i < 4; i++) {
-                            if(SetTDI(ref smcdata, tdi, i))
+                            if(SetTdi(ref smcdata, tdi, i))
                                 ret = true;
                         }
                         return ret;
@@ -418,7 +418,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     case 1:
@@ -428,7 +428,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     case 2:
@@ -438,7 +438,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     case 3:
@@ -448,7 +448,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TMSTDIValues)tdi, tdi);
+                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     default:
@@ -457,7 +457,7 @@
                 return patched;
             }
 
-            public static void DisablePNCCharge(ref byte[] smcdata) {
+            public static void DisablePncCharge(ref byte[] smcdata) {
                 DecryptCheck(ref smcdata);
                 for(var i = 0; i < smcdata.Length - 8; i++) {
                     if(smcdata[i] != 0xD0)
