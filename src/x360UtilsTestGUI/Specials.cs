@@ -28,6 +28,10 @@
                 return;
             var outdir = fbd.SelectedPath;
             var bw = new BackgroundWorker();
+            bw.RunWorkerCompleted += (sender, args) => {
+                                         if(args.Error != null)
+                                             throw args.Error;
+                                     };
             if(jf)
                 bw.DoWork += (o, eventArgs) => _jf.ExtractJungleFlasherData(nand, key, outdir);
             else
