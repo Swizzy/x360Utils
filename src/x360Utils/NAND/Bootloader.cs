@@ -90,7 +90,7 @@
             switch(Type) {
                 case BootLoaderTypes.CB:
                 case BootLoaderTypes.CBA:
-                    crypto.DecryptBootloaderCB(ref Data, decryptionkey, null, Cryptography.BLEncryptionTypes.Default, out OutKey);
+                    crypto.DecryptBootloaderCB(ref Data, decryptionkey, null, Cryptography.BlEncryptionTypes.Default, out OutKey);
                     Decrypted = crypto.VerifyCBDecrypted(ref Data);
                     break;
                 case BootLoaderTypes.CBB:
@@ -121,14 +121,14 @@
             switch(Type) {
                 case BootLoaderTypes.CB:
                 case BootLoaderTypes.CBA:
-                    crypto.EncryptBootloaderCB(ref Data, encryptionkey, null, Cryptography.BLEncryptionTypes.Default, out Key);
+                    crypto.EncryptBootloaderCB(ref Data, encryptionkey, null, Cryptography.BlEncryptionTypes.Default, out Key);
                     break;
                 case BootLoaderTypes.CBB:
                     var cryptotype = crypto.GetBootloaderCryptoType(ref Data);
                     crypto.DecryptBootloaderCB(ref Data, encryptionkey, Key, cryptotype, out OutKey);
                     break;
                 case BootLoaderTypes.CD:
-                    crypto.DecryptBootloaderCB(ref Data, encryptionkey, Key, Cryptography.BLEncryptionTypes.Default, out OutKey);
+                    crypto.DecryptBootloaderCB(ref Data, encryptionkey, Key, Cryptography.BlEncryptionTypes.Default, out OutKey);
                     break;
                 case BootLoaderTypes.CE:
                 case BootLoaderTypes.CF0:

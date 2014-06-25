@@ -15,8 +15,6 @@
 
         #endregion
 
-        //internal static readonly byte[] UnInitializedSpareBuffer = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-
         internal static ushort GetMmcMobileBlock(ref byte[] data, byte mobileType) { return Common.BitOperations.Swap(BitConverter.ToUInt16(data, 0x1C + (mobileType * 0x4))); }
 
         internal static ushort GetMmcMobileSize(ref byte[] data, byte mobileType) { return Common.BitOperations.Swap(BitConverter.ToUInt16(data, 0x1E + (mobileType * 0x4))); }

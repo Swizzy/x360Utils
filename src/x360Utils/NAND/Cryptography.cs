@@ -8,11 +8,11 @@
     public sealed class Cryptography {
         #region BLEncryptionTypes enum
 
-        public enum BLEncryptionTypes: ushort {
+        public enum BlEncryptionTypes: ushort {
             Default = 0,
-            CBB = 0x800,
-            MFGCBB = 0x801,
-            CPUKey = 0x1800
+            Cbb = 0x800,
+            MfgCbb = 0x801,
+            CpuKey = 0x1800
         }
 
         #endregion
@@ -21,7 +21,7 @@
                                                    0xDD, 0x88, 0xAD, 0x0C, 0x9E, 0xD6, 0x69, 0xE7, 0xB5, 0x67, 0x94, 0xFB, 0x68, 0x56, 0x3E, 0xFA
                                                };
 
-        public static void Rc4(ref byte[] bytes, byte[] key) {
+        public static void Rc4(ref byte[] data, byte[] key) {
             var s = new byte[256];
             var k = new byte[256];
             byte temp;
@@ -38,22 +38,22 @@
                 s[j] = temp;
             }
             i = j = 0;
-            for(var x = 0; x < bytes.GetLength(0); x++) {
+            for(var x = 0; x < data.GetLength(0); x++) {
                 i = (i + 1) % 256;
                 j = (j + s[i]) % 256;
                 temp = s[i];
                 s[i] = s[j];
                 s[j] = temp;
                 var t = (s[i] + s[j]) % 256;
-                bytes[x] ^= s[t];
+                data[x] ^= s[t];
             }
         }
 
         #region SMC
 
-        public static bool VerifySMCDecrypted(ref byte[] data) { return BitOperations.DataIsZero(ref data, data.Length - 4, 4); }
+        public static bool VerifySmcDecrypted(ref byte[] data) { return BitOperations.DataIsZero(ref data, data.Length - 4, 4); }
 
-        public void DecryptSMC(ref byte[] data) {
+        public void DecryptSmc(ref byte[] data) {
             var key = new byte[] {
                                      0x42, 0x75, 0x4E, 0x79
                                  };
@@ -66,9 +66,9 @@
             }
         }
 
-        public void EncryptSMC(ref byte[] data) {
+        public void EncryptSmc(ref byte[] data) {
             var key = new byte[] {
-                                     0x42, 0x75, 0x4e, 0x79
+                                     0x42, 0x75, 0x4E, 0x79
                                  };
             for(var i = 0; i < data.Length; i++) {
                 var num2 = data[i] ^ (key[i & 3] & 0xff);
@@ -83,23 +83,23 @@
 
         #region Bootloaders
 
-        public BLEncryptionTypes GetBootloaderCryptoType(ref byte[] data) {
+        public BlEncryptionTypes GetBootloaderCryptoType(ref byte[] data) {
             var type = BitOperations.Swap(BitConverter.ToUInt16(data, 6));
-            if(Enum.IsDefined(typeof(BLEncryptionTypes), type))
-                return (BLEncryptionTypes)type;
+            if(Enum.IsDefined(typeof(BlEncryptionTypes), type))
+                return (BlEncryptionTypes)type;
             throw new NotSupportedException(string.Format("This encryption type is not supported yet... Value: {0:X4}", type));
         }
 
-        public void DecryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
+        public void DecryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BlEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
             if(inkey == null) {
                 switch(type) {
-                    case BLEncryptionTypes.Default:
-                    case BLEncryptionTypes.CBB:
+                    case BlEncryptionTypes.Default:
+                    case BlEncryptionTypes.Cbb:
                         inkey = BlKey;
                         break;
-                    case BLEncryptionTypes.MFGCBB:
+                    case BlEncryptionTypes.MfgCbb:
                         inkey = new byte[0x10]; // 00's for key (MFG bootloader)
                         break;
                     default:
@@ -114,16 +114,16 @@
             var header = new byte[0x10];
             Array.Copy(data, 0x10, header, 0x0, 0x10);
             switch(type) {
-                case BLEncryptionTypes.Default:
+                case BlEncryptionTypes.Default:
                     outkey = new HMACSHA1(inkey).ComputeHash(header);
                     break;
-                case BLEncryptionTypes.CBB:
-                case BLEncryptionTypes.MFGCBB:
+                case BlEncryptionTypes.Cbb:
+                case BlEncryptionTypes.MfgCbb:
                     Array.Resize(ref header, 0x20);
                     Array.Copy(inkey, 0x0, header, 0x10, 0x10);
                     outkey = new HMACSHA1(oldkey).ComputeHash(header);
                     break;
-                case BLEncryptionTypes.CPUKey:
+                case BlEncryptionTypes.CpuKey:
                     header = new byte[0x30];
                     Array.Copy(data, 0x10, header, 0x0, 0x10);
                     Array.Copy(inkey, 0x0, header, 0x10, 0x10);
@@ -143,16 +143,16 @@
             Buffer.BlockCopy(decrypted, 0x0, data, 0x20, decrypted.Length);
         }
 
-        public void EncryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BLEncryptionTypes type, out byte[] outkey) {
+        public void EncryptBootloaderCB(ref byte[] data, byte[] inkey, byte[] oldkey, BlEncryptionTypes type, out byte[] outkey) {
             #region Error Handling
 
             if(inkey == null) {
                 switch(type) {
-                    case BLEncryptionTypes.Default:
-                    case BLEncryptionTypes.CBB:
+                    case BlEncryptionTypes.Default:
+                    case BlEncryptionTypes.Cbb:
                         inkey = BlKey;
                         break;
-                    case BLEncryptionTypes.MFGCBB:
+                    case BlEncryptionTypes.MfgCbb:
                         inkey = new byte[0x10]; // 00's for key (MFG bootloader)
                         break;
                     default:
@@ -167,14 +167,14 @@
             var header = new byte[0x10];
             Array.Copy(data, 0x10, header, 0x0, 0x10);
             switch(type) {
-                case BLEncryptionTypes.Default:
+                case BlEncryptionTypes.Default:
                     break;
-                case BLEncryptionTypes.CBB:
-                case BLEncryptionTypes.MFGCBB:
+                case BlEncryptionTypes.Cbb:
+                case BlEncryptionTypes.MfgCbb:
                     Buffer.BlockCopy(oldkey, 0x0, header, 0x0, 0x10);
                     Buffer.BlockCopy(header, 0x0, data, 0x10, 0x10);
                     break;
-                case BLEncryptionTypes.CPUKey:
+                case BlEncryptionTypes.CpuKey:
                     throw new NotImplementedException("This type is not yet supported...");
                 default:
                     throw new ArgumentOutOfRangeException("type");
@@ -218,9 +218,9 @@
 
         #region Keyvault
 
-        public void DecryptKV(ref byte[] data, string cpukey) { DecryptKV(ref data, StringUtils.HexToArray(cpukey)); }
+        public void DecryptKv(ref byte[] data, string cpukey) { DecryptKv(ref data, StringUtils.HexToArray(cpukey)); }
 
-        public void DecryptKV(ref byte[] data, byte[] cpukey) {
+        public void DecryptKv(ref byte[] data, byte[] cpukey) {
             if(data.Length < 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             if(data.Length > 0x4000)
@@ -240,9 +240,9 @@
             Buffer.BlockCopy(tmp, 0x0, data, header.Length, tmp.Length);
         }
 
-        public bool VerifyKVDecrypted(ref byte[] data, string cpukey) { return VerifyKVDecrypted(ref data, StringUtils.HexToArray(cpukey)); }
+        public bool VerifyKvDecrypted(ref byte[] data, string cpukey) { return VerifyKvDecrypted(ref data, StringUtils.HexToArray(cpukey)); }
 
-        public bool VerifyKVDecrypted(ref byte[] data, byte[] cpukey) {
+        public bool VerifyKvDecrypted(ref byte[] data, byte[] cpukey) {
             if(data.Length < 0x4000)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             if(data.Length > 0x4000)
@@ -269,7 +269,7 @@
 
         #region FCRT
 
-        public bool VerifyFCRTDecrypted(ref byte[] data) {
+        public bool VerifyFcrtDecrypted(ref byte[] data) {
             if(data.Length < 0x140)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             using(var sha1 = new SHA1Managed()) {
@@ -280,7 +280,7 @@
             }
         }
 
-        public void DecryptFCRT(ref byte[] data, byte[] cpukey) {
+        public void DecryptFcrt(ref byte[] data, byte[] cpukey) {
             if(data.Length < 0x120)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             var offset = BitOperations.Swap(BitConverter.ToUInt32(data, 0x11C));

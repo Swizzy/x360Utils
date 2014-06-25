@@ -31,7 +31,7 @@
         public JTAGSMCPatches JTAGPatches = new JTAGSMCPatches();
 
         private static void DecryptCheck(ref byte[] data) {
-            if(!Cryptography.VerifySMCDecrypted(ref data))
+            if(!Cryptography.VerifySmcDecrypted(ref data))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotDecrypted);
         }
 

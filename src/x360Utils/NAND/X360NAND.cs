@@ -33,24 +33,24 @@
                 return reader.ReadBytes(0x4000);
             var kv = GetKeyVault(reader);
             var cpukey = GetNANDCPUKey(reader);
-            _crypto.DecryptKV(ref kv, cpukey);
-            if(_crypto.VerifyKVDecrypted(ref kv, cpukey))
+            _crypto.DecryptKv(ref kv, cpukey);
+            if(_crypto.VerifyKvDecrypted(ref kv, cpukey))
                 return kv;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
         public byte[] GetKeyVault(NANDReader reader, string cpukey) {
             var kv = GetKeyVault(reader);
-            _crypto.DecryptKV(ref kv, cpukey);
-            if(_crypto.VerifyKVDecrypted(ref kv, cpukey))
+            _crypto.DecryptKv(ref kv, cpukey);
+            if(_crypto.VerifyKvDecrypted(ref kv, cpukey))
                 return kv;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
 
         public byte[] GetKeyVault(NANDReader reader, byte[] cpukey) {
             var kv = GetKeyVault(reader);
-            _crypto.DecryptKV(ref kv, cpukey);
-            if(_crypto.VerifyKVDecrypted(ref kv, cpukey))
+            _crypto.DecryptKv(ref kv, cpukey);
+            if(_crypto.VerifyKvDecrypted(ref kv, cpukey))
                 return kv;
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
         }
@@ -65,8 +65,8 @@
             if(!decrypted)
                 return reader.ReadBytes((int)size);
             tmp = reader.ReadBytes((int)size);
-            _crypto.DecryptSMC(ref tmp);
-            if(!Cryptography.VerifySMCDecrypted(ref tmp))
+            _crypto.DecryptSmc(ref tmp);
+            if(!Cryptography.VerifySmcDecrypted(ref tmp))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataDecryptionFailed);
             return tmp;
         }
