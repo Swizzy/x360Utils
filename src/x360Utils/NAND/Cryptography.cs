@@ -269,18 +269,18 @@
 
         #region FCRT
 
-        public bool VerifyFCRTDecrypted(ref byte[] decryptedData, ref byte[] encryptedData) {
-            if(decryptedData.Length < 0x140 || encryptedData.Length < 0x140)
+        public bool VerifyFCRTDecrypted(ref byte[] data) {
+            if(data.Length < 0x140)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             using(var sha1 = new SHA1Managed()) {
                 var hash = new byte[20];
-                Buffer.BlockCopy(encryptedData, 0x12C, hash, 0, hash.Length);
-                var hash2 = sha1.ComputeHash(decryptedData);
+                Buffer.BlockCopy(data, 0x12C, hash, 0, hash.Length);
+                var hash2 = sha1.ComputeHash(data, (int)BitOperations.Swap(BitConverter.ToUInt32(data, 0x11C)), (int)BitOperations.Swap(BitConverter.ToUInt32(data, 0x118)));
                 return BitOperations.CompareByteArrays(ref hash, ref hash2);
             }
         }
 
-        public byte[] DecryptFCRT(ref byte[] data, byte[] cpukey) {
+        public void DecryptFCRT(ref byte[] data, byte[] cpukey) {
             if(data.Length < 0x120)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
             var offset = BitOperations.Swap(BitConverter.ToUInt32(data, 0x11C));
@@ -310,7 +310,8 @@
                 }
                 //return new BinaryReader(cs).ReadBytes((int)length);
             }
-            return ret.ToArray();
+            buf = ret.ToArray();
+            Buffer.BlockCopy(buf, 0, data, (int)offset, buf.Length);
         }
 
         #endregion

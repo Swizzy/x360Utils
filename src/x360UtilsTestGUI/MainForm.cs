@@ -405,9 +405,9 @@
                         var key = keyutils.GetCPUKeyFromTextFile(args.Data2);
                         AddOutput("{0}Decrypting FCRT.bin...{0}", Environment.NewLine);
                         var crypt = new Cryptography();
-                        var dec = crypt.DecryptFCRT(ref data, StringUtils.HexToArray(key));
+                        crypt.DecryptFCRT(ref data, StringUtils.HexToArray(key));
                         AddOutput("Verifying FCRT.bin... Result: ");
-                        AddOutput(crypt.VerifyFCRTDecrypted(ref dec, ref data) ? "OK!" : "Failed!");
+                        AddOutput(crypt.VerifyFCRTDecrypted(ref data) ? "OK!" : "Failed!");
                     }
                 }
             }
