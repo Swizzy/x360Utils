@@ -159,7 +159,7 @@
 
         public MobileEntry[] MobileArray { get; private set; }
 
-        public void SeekToLbaEx(ushort lba) {
+        public void SeekToLbaEx(uint lba) {
             if(_badBlocks.Contains(lba)) {
                 var block = 0;
                 while(true) {

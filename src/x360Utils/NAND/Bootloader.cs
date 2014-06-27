@@ -41,17 +41,21 @@
             Offset = (uint)reader.Position;
             var header = reader.ReadBytes(0x10);
             Type = GetTypeFromHeader(ref header, count);
-            Size = (uint)GetBootloaderSize(ref header);
+            Size = GetBootloaderSize(ref header);
             Build = GetBootloaderVersion(ref header);
             if(readitin) {
                 reader.Seek(Offset, SeekOrigin.Begin);
                 Data = reader.ReadBytes((int)Size);
             }
-            else
-                reader.Seek(Offset + Size, SeekOrigin.Begin);
+            else {
+                reader.SeekToLbaEx(Offset + Size / 0x4000);
+                if (Offset + Size % 0x4000 > 0)
+                    reader.Seek(Offset + Size % 0x4000, SeekOrigin.Current);
+                //reader.Seek(Offset + Size, SeekOrigin.Begin);
+            }
         }
 
-        private int GetBootloaderSize(ref byte[] header) { return (int)BitOperations.Swap(BitConverter.ToUInt32(header, 0xC)); }
+        private uint GetBootloaderSize(ref byte[] header) { return BitOperations.Swap(BitConverter.ToUInt32(header, 0xC)); }
 
         public BootLoaderTypes GetTypeFromHeader(ref byte[] header, int count = 0) {
             if(header[0] == 0x43) {
