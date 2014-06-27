@@ -6,13 +6,13 @@
     using x360Utils.Common;
 
     public class NANDFileSystem {
-        private static long GetBaseOffsetForMeta2(ref NANDReader reader) {
+        private static long GetBaseBlockForMeta2(ref NANDReader reader) {
             reader.RawSeek(reader.FsRoot.Offset / 0x200 * 0x210 + 0x200, SeekOrigin.Begin);
             var meta = NANDSpare.GetMetaData(reader.RawReadBytes(0x10));
             var reserved = 0x1E0;
             reserved -= meta.Meta2.FsPageCount;
             reserved -= meta.Meta2.FsSize0 << 2;
-            return (reserved * 8) * 0x4000;
+            return reserved * 8;
         }
 
         public FileSystemEntry[] ParseFileSystem(ref NANDReader reader) { return ParseFileSystem(ref reader, reader.FsRoot); }
@@ -85,9 +85,9 @@
             public byte[] GetData(ref NANDReader reader) {
                 var ret = new List<byte>();
                 var left = (int)Size;
-                var baseOffset = reader.MetaType != NANDSpare.MetaType.MetaType2 ? 0 : GetBaseOffsetForMeta2(ref reader);
+                var baseBlock = reader.MetaType != NANDSpare.MetaType.MetaType2 ? 0 : GetBaseBlockForMeta2(ref reader);
                 foreach(var offset in Blocks) {
-                    reader.Seek(baseOffset + (offset * 0x4000), SeekOrigin.Begin);
+                    reader.SeekToLbaEx((ushort)(baseBlock + offset));
                     ret.AddRange(reader.ReadBytes(BitOperations.GetSmallest(left, 0x4000)));
                     left -= BitOperations.GetSmallest(left, 0x4000);
                 }
