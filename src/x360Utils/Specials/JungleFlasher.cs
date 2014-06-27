@@ -1,4 +1,6 @@
-﻿namespace x360Utils.Specials {
+﻿//#define CRRandom
+namespace x360Utils.Specials
+{
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -429,7 +431,11 @@
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotDecrypted);
             var cr = new List<byte>();
             var tmp = new byte[0x10];
-            for(var i = 0; i < (decryptedFcrt.Length - 0x140) / 0x20; i++) {
+#if CRRandom
+            foreach(var i in GetRandomOrder((decryptedFcrt.Length - 0x140) / 0x20)) {
+#else
+            for (var i = 0; i < (decryptedFcrt.Length - 0x140) / 0x20; i++) {
+#endif
                 cr.Add(decryptedFcrt[(i * 0x20) + 0x140]);
                 cr.Add(decryptedFcrt[(i * 0x20) + 0x140 + 1]);
                 cr.Add(decryptedFcrt[(i * 0x20) + 0x140 + 15]);
@@ -445,7 +451,22 @@
             return tmp;
         }
 
-
+#if CRRandom
+        private static IEnumerable<int> GetRandomOrder(int max) {
+            var list = new List<int>();
+            var rnd = new Random();
+            for(var i = 0; i < max; i++) {
+                while(true) {
+                    var val = rnd.Next(0, max);
+                    if(list.Contains(val))
+                        continue;
+                    list.Add(val);
+                    break;
+                }
+            }
+            return list.ToArray();
+        }
+#endif
 
         public void ExtractJungleFlasherData(string nandfile, string cpukey, string outdir) { ExtractJungleFlasherData(nandfile, StringUtils.HexToArray(cpukey), outdir); }
 
