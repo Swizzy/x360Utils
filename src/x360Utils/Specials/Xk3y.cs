@@ -11,14 +11,12 @@
         private readonly X360NAND _nand = new X360NAND();
 
         private static string TranslateOsigToFile(string osig) {
-            if(osig.Contains("0500"))
-                return "0500.txt";
-            if(osig.Contains("0502"))
-                return "0502.txt";
-            if(osig.Contains("1175"))
-                return "1175.txt";
-            if(osig.Contains("1532"))
-                return "1532.txt";
+            osig = osig.Trim().ToUpper();
+            //I've commented out the match for DG-16D4S because they're not supported yet by xk3y afaik (with this "style")
+            if (osig.StartsWith("PLDS") && (osig.Contains("DG-16D5S") /*|| osig.Contains("DG-16D4S")*/))
+                return osig.Substring(osig.LastIndexOf(' ')) + ".txt"; // We found a Liteon DG-16D5S/Liteon DG-16D4S, they always have the version at the end...
+            if(osig.StartsWith("HL-DT-STDVD-ROM") && osig.Contains("DL10N"))
+                return osig.Substring(osig.LastIndexOf(' ')) + ".txt"; // We found a Hitachi DL10N, they always have the version at the end...
             throw new NotSupportedException(string.Format("This OSIG isn't supported by this version of the x360Utils/xk3y: {0}", osig));
         }
 
