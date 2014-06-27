@@ -101,37 +101,57 @@
 
         private void GetKeyBtnClick(object sender, EventArgs e) {
             var ofd = new OpenFileDialog();
-            if(ofd.ShowDialog() != DialogResult.OK)
+            if (ofd.ShowDialog() != DialogResult.OK)
                 return;
-            try {
-                using(var reader = new NANDReader(ofd.FileName)) {
-                    AddOutput("Grabbing CPUKey from NAND: ");
-                    AddOutput(_x360NAND.GetNandCpuKey(reader));
+            var bw = new BackgroundWorker();
+            bw.DoWork += (o, args) =>
+            {
+                try
+                {
+                    using (var reader = new NANDReader(ofd.FileName))
+                    {
+                        AddOutput("Grabbing CPUKey from NAND: ");
+                        AddOutput(_x360NAND.GetNandCpuKey(reader));
+                    }
                 }
-            }
-            catch(X360UtilsException ex) {
-                AddOutput("FAILED!");
-                AddException(ex.ToString());
-            }
-            AddOutput(Environment.NewLine);
+                catch (X360UtilsException ex)
+                {
+                    AddOutput("FAILED!");
+                    AddException(ex.ToString());
+                }
+                AddOutput(Environment.NewLine);
+                AddDone();
+            };
+            bw.RunWorkerCompleted += BwCompleted;
+            bw.RunWorkerAsync();
         }
 
         private void GetfusebtnClick(object sender, EventArgs e) {
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            try {
-                using(var reader = new NANDReader(ofd.FileName)) {
-                    AddOutput("Grabbing FUSES from NAND: ");
-                    AddOutput(Environment.NewLine);
-                    AddOutput(_x360NAND.GetVirtualFuses(reader));
+            var bw = new BackgroundWorker();
+            bw.DoWork += (o, args) =>
+            {
+                try
+                {
+                    using (var reader = new NANDReader(ofd.FileName))
+                    {
+                        AddOutput("Grabbing FUSES from NAND: ");
+                        AddOutput(Environment.NewLine);
+                        AddOutput(_x360NAND.GetVirtualFuses(reader));
+                    }
                 }
-            }
-            catch(X360UtilsException ex) {
-                AddOutput("FAILED!");
-                AddException(ex.ToString());
-            }
-            AddOutput(Environment.NewLine);
+                catch (X360UtilsException ex)
+                {
+                    AddOutput("FAILED!");
+                    AddException(ex.ToString());
+                }
+                AddOutput(Environment.NewLine);
+                AddDone();
+            };
+            bw.RunWorkerCompleted += BwCompleted;
+            bw.RunWorkerAsync();
         }
 
         private void ClearToolStripMenuItemClick(object sender, EventArgs e) {
@@ -156,8 +176,8 @@
             _sw = Stopwatch.StartNew();
             try {
                 using(var reader = new NANDReader(e.Argument as string)) {
-                    AddOutput("Grabbing Launch.ini from NAND:{0}", Environment.NewLine);
-                    AddOutput("{0}{1}", Environment.NewLine, _x360NAND.GetLaunchIni(reader));
+                    AddOutput("Grabbing Launch.ini from NAND: ");
+                    AddOutput("{0}{0}{1}", Environment.NewLine, _x360NAND.GetLaunchIni(reader));
                 }
             }
             catch(X360UtilsException ex) {
@@ -217,33 +237,43 @@
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            try {
-                using(var reader = new NANDReader(ofd.FileName)) {
-                    AddOutput("Grabbing SMC_Config from NAND: ");
-                    var cfg = _x360NAND.GetSmcConfig(reader);
-                    var config = new SmcConfig();
-                    AddOutput("\r\nChecksum: {0}", config.GetCheckSum(ref cfg));
-                    AddOutput("\r\nDVDRegion: {0}", config.GetDVDRegion(ref cfg));
-                    AddOutput("\r\nCPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SmcConfig.SmcConfigFans.Cpu));
-                    AddOutput("\r\nGPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SmcConfig.SmcConfigFans.Gpu));
-                    AddOutput("\r\nGameRegion: {0}", config.GetGameRegion(ref cfg));
-                    AddOutput("\r\nMACAdress: {0}", config.GetMACAdress(ref cfg));
-                    AddOutput("\r\nCPUTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Cpu));
-                    AddOutput("\r\nCPUMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.CpuMax));
-                    AddOutput("\r\nGPUTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Gpu));
-                    AddOutput("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.GpuMax));
-                    AddOutput("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Ram));
-                    AddOutput("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.RamMax));
-                    AddOutput("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg));
-                    AddOutput("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg));
-                }
-            }
-            catch(X360UtilsException ex) {
-                AddOutput("FAILED!");
-                AddException(ex.ToString());
-            }
-            AddOutput(Environment.NewLine);
-            AddDone();
+            var bw = new BackgroundWorker();
+            bw.DoWork += (o, args) => {
+                             try {
+                                 using(var reader = new NANDReader(ofd.FileName)) {
+                                     AddOutput("Grabbing SMC_Config from NAND: ");
+                                     var cfg = _x360NAND.GetSmcConfig(reader);
+                                     var config = new SmcConfig();
+                                     AddOutput("\r\nChecksum: {0}", config.GetCheckSum(ref cfg));
+                                     AddOutput("\r\nDVDRegion: {0}", config.GetDVDRegion(ref cfg));
+                                     AddOutput("\r\nCPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SmcConfig.SmcConfigFans.Cpu));
+                                     AddOutput("\r\nGPUFanSpeed: {0}", config.GetFanSpeed(ref cfg, SmcConfig.SmcConfigFans.Gpu));
+                                     AddOutput("\r\nGameRegion: {0}", config.GetGameRegion(ref cfg));
+                                     AddOutput("\r\nMACAdress: {0}", config.GetMACAdress(ref cfg));
+                                     AddOutput("\r\nCPUTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Cpu));
+                                     AddOutput("\r\nCPUMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.CpuMax));
+                                     AddOutput("\r\nGPUTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Gpu));
+                                     AddOutput("\r\nGPUMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.GpuMax));
+                                     AddOutput("\r\nRAMTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.Ram));
+                                     AddOutput("\r\nRAMMaxTemp: {0}", config.GetTempString(ref cfg, SmcConfig.SmcConfigTemps.RamMax));
+                                     AddOutput("\r\nVideoRegion: {0}", config.GetVideoRegion(ref cfg));
+                                     AddOutput("\r\nResetCode: {0} ({1})", config.GetResetCode(ref cfg, true), config.GetResetCode(ref cfg));
+                                 }
+                             }
+                             catch(X360UtilsException ex) {
+                                 AddOutput("FAILED!");
+                                 AddException(ex.ToString());
+                             }
+                             AddOutput(Environment.NewLine);
+                             AddDone();
+                         };
+            bw.RunWorkerCompleted += BwCompleted;
+            bw.RunWorkerAsync();
+        }
+
+        private void BwCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs) {
+            if (runWorkerCompletedEventArgs.Error != null)
+                AddException(runWorkerCompletedEventArgs.Error.ToString());
         }
 
         private void GetsmcbtnClick(object sender, EventArgs e) {
@@ -251,25 +281,34 @@
             var ofd = new OpenFileDialog();
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
-            try {
-                using(var reader = new NANDReader(ofd.FileName)) {
-                    AddOutput("Grabbing SMC from NAND: ");
-                    var data = _x360NAND.GetSmc(reader, true);
-                    var smc = new Smc();
-                    var type = smc.GetType(ref data);
-                    AddOutput("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data));
-                    AddOutput("\r\nSMC Type: {0}", type);
-                    if(type == Smc.SmcTypes.Jtag || type == Smc.SmcTypes.RJtag)
-                        Smc.JtagsmcPatches.AnalyseSmc(ref data);
-                    AddOutput("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No");
+            var bw = new BackgroundWorker();
+            bw.DoWork += (o, args) =>
+            {
+                try
+                {
+                    using (var reader = new NANDReader(ofd.FileName))
+                    {
+                        AddOutput("Grabbing SMC from NAND: ");
+                        var data = _x360NAND.GetSmc(reader, true);
+                        var smc = new Smc();
+                        var type = smc.GetType(ref data);
+                        AddOutput("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data));
+                        AddOutput("\r\nSMC Type: {0}", type);
+                        if (type == Smc.SmcTypes.Jtag || type == Smc.SmcTypes.RJtag)
+                            Smc.JtagsmcPatches.AnalyseSmc(ref data);
+                        AddOutput("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No");
+                    }
                 }
-            }
-            catch(X360UtilsException ex) {
-                AddOutput("FAILED!");
-                AddException(ex.ToString());
-            }
-            AddOutput(Environment.NewLine);
-            AddDone();
+                catch (X360UtilsException ex)
+                {
+                    AddOutput("FAILED!");
+                    AddException(ex.ToString());
+                }
+                AddOutput(Environment.NewLine);
+                AddDone();
+            };
+            bw.RunWorkerCompleted += BwCompleted;
+            bw.RunWorkerAsync();
         }
 
         private void MetaUtilsClick(object sender, EventArgs e) {
