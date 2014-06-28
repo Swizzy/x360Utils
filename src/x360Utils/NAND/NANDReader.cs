@@ -20,9 +20,11 @@
             if(!VerifyMagic())
                 throw new Exception("Bad Magic");
             if(Main.VerifyVerbosityLevel(1))
-                Main.SendInfo("\r\nChecking for spare...");
+                Main.SendInfo("\r\nChecking for spare... ");
             HasSpare = CheckForSpare();
             if(HasSpare) {
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("Image has Spare...");
                 Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4200));
                 _doSendPosition = true;
                 if(Main.VerifyVerbosityLevel(1))
@@ -40,6 +42,8 @@
                 }
             }
             else {
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("Image does NOT have Spare...");
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\n");
                 Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4000));
@@ -161,26 +165,26 @@
 
         public void SeekToLbaEx(uint lba) {
             if(_badBlocks.Contains(lba)) {
-                var block = 0;
+                var block = MetaType == NANDSpare.MetaType.MetaType2 ? 0xFFF : 0x3FF;
                 while(true) {
                     NANDSpare.MetaData meta;
                     switch(MetaType) {
                         case NANDSpare.MetaType.MetaType0:
                         case NANDSpare.MetaType.MetaType1:
-                            Seek((lba * 0x4000) - (block * 0x4000), SeekOrigin.Begin);
+                            Seek(block * 0x4000, SeekOrigin.Begin);
                             RawSeek(0x200, SeekOrigin.Current);
                             meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
                             if(NANDSpare.GetLba(ref meta) == lba) {
-                                Seek((lba * 0x4000) - (block * 0x4000), SeekOrigin.Begin);
+                                Seek(block * 0x4000, SeekOrigin.Begin);
                                 return;
                             }
                             break;
                         case NANDSpare.MetaType.MetaType2:
-                            Seek(((lba / 8) * 0x20000) - (block * 0x20000), SeekOrigin.Begin);
+                            Seek(block * 0x4000, SeekOrigin.Begin);
                             RawSeek(0x200, SeekOrigin.Current);
                             meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
-                            if(NANDSpare.GetLba(ref meta) == lba) {
-                                Seek((((lba / 8) * 0x20000) - block * 0x20000) + ((lba % 8) * 0x4000), SeekOrigin.Begin);
+                            if(NANDSpare.GetLba(ref meta) == lba / 8) {
+                                Seek(block * 0x4000 + ((lba % 8) * 0x4000), SeekOrigin.Begin);
                                 return;
                             }
                             break;
@@ -188,7 +192,7 @@
                             Seek(lba * 0x4000, SeekOrigin.Begin);
                             return;
                     }
-                    block++;
+                    block--;
                 }
             }
             Seek(MetaType == NANDSpare.MetaType.MetaType2 ? ((lba / 8) * 0x20000) + ((lba % 8) * 0x4000) : lba * 0x4000, SeekOrigin.Begin);
@@ -243,12 +247,19 @@
 
         private bool VerifyMagic() {
             if(Main.VerifyVerbosityLevel(1))
-                Main.SendInfo("\r\nChecking Magic bytes...");
+                Main.SendInfo("\r\nChecking Magic bytes... ");
             RawSeek(0, SeekOrigin.Begin);
             var tmp = _binaryReader.ReadBytes(2);
             Debug.SendDebug("Restoring position...");
             RawSeek(0, SeekOrigin.Begin);
-            return (tmp[0] == 0xFF && tmp[1] == 0x4F);
+            var ret = (tmp[0] == 0xFF && tmp[1] == 0x4F);
+            if(Main.VerifyVerbosityLevel(1)) {
+                if(ret)
+                    Main.SendInfo("OK!");
+                else
+                    Main.SendInfo("Failed! (Expected: 0xFF4F but got: 0x{0:X2}{1:X2}", tmp[0], tmp[1]);
+            }
+            return ret;
         }
 
         public void ScanForFsRootAndMobile() {
@@ -403,11 +414,13 @@
                 var spare = RawReadBytes(0x10);
                 if(NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType)) {
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("{1}BadBlock Marker detected @ block 0x{0:X}{1}", block, Environment.NewLine);
+                        Main.SendInfo("{1}BadBlock Marker detected @ block 0x{0:X}", block, Environment.NewLine);
                     _badBlocks.Add(block);
                 }
                 RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSb ? 0x20FF0 : 0x41F0) : 0x41F0, SeekOrigin.Current);
             }
+            if (Main.VerifyVerbosityLevel(1))
+                Main.SendInfo(Environment.NewLine);
             if(_badBlocks.Count > 0)
                 return _badBlocks.ToArray();
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);

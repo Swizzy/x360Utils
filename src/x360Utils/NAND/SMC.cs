@@ -73,7 +73,7 @@
                             retail = true;
                             glitchPatched = false; // Not properly glitch patched...
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("Found Retail bytes @ 0x{0:X}\n", i);
+                                Main.SendInfo("\r\nFound Retail bytes @ 0x{0:X}", i);
                         }
                         break;
                     case 0x00:
@@ -81,7 +81,7 @@
                         if((smcdata[i + 1] == 0x00) && (smcdata[i + 2] == 0xE5) && (smcdata[i + 4] == 0xB4) && (smcdata[i + 5] == 0x05)) {
                             glitchPatched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("Found Glitch bytes @ 0x{0:X}\n", i);
+                                Main.SendInfo("\r\nFound Glitch bytes @ 0x{0:X}", i);
                         }
                         break;
                     case 0x78:
@@ -89,14 +89,14 @@
                         if((smcdata[i + 1] == 0xBA) && (smcdata[i + 2] == 0xB6)) {
                             ret = SmcTypes.Cygnos;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("Found Cygnos bytes @ 0x{0:X}\n", i);
+                                Main.SendInfo("\r\nFound Cygnos bytes @ 0x{0:X}", i);
                         }
                         break;
                     case 0xD0:
                         /* JTAG */
                         if((smcdata[i + 1] == 0x00) && (smcdata[i + 2] == 0x00) && (smcdata[i + 3] == 0x1B)) {
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("Found JTAG bytes @ 0x{0:X}\n", i);
+                                Main.SendInfo("\r\nFound JTAG bytes @ 0x{0:X}", i);
                             ret = SmcTypes.Jtag;
                         }
                         break;
@@ -106,11 +106,11 @@
                 switch(ret) {
                     case SmcTypes.Jtag:
                         if(Main.VerifyVerbosityLevel(1))
-                            Main.SendInfo("Image has both Glitch and JTAG patches\n");
+                            Main.SendInfo("\r\nImage has both Glitch and JTAG patches");
                         return SmcTypes.RJtag;
                     case SmcTypes.Cygnos:
                         if(Main.VerifyVerbosityLevel(1))
-                            Main.SendInfo("Image has both Glitch and Cygnos patches\n");
+                            Main.SendInfo("\r\nImage has both Glitch and Cygnos patches");
                         return SmcTypes.RJtagCygnos;
                     default:
                         return SmcTypes.Glitch;
@@ -129,7 +129,7 @@
                 smcdata[i + 1] = 0x00;
                 patched = true;
                 if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("SMC Patched @ offset: 0x{0:X}\n", i);
+                    Main.SendInfo("\r\nSMC Glitch Patched @ offset: 0x{0:X}", i);
             }
             return patched;
         }
@@ -143,7 +143,7 @@
                     continue;
                 if(smcdata[i] == 0x00 && smcdata[i + 1] == 0x00) {
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Glitch patch found @ offset: 0x{0:X}\n", i);
+                        Main.SendInfo("\r\nGlitch patch found @ offset: 0x{0:X}", i);
                     patched = true;
                 }
                 found = true;
@@ -258,7 +258,7 @@
                        smcdata[i + 8] != 0xC2)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("TMS Found @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
+                        Main.SendInfo("\r\nTMS Found @ offset: 0x{0:X} TMS Value: {1} (0x{2:X2})\n", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
                     return smcdata[i + 1];
                 }
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
@@ -272,7 +272,7 @@
                             if(smcdata[i] != 0x92 || smcdata[i + 4] != 0xDF || smcdata[i + 5] != 0xF8 || smcdata[i + 6] != 0x22)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI0 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
+                                Main.SendInfo("\r\nTDI0 Found @ offset: 0x{0:X} TDI Value: {1} (0x{2:X2})", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
                             return smcdata[i + 1];
                         }
                         break;
@@ -281,7 +281,7 @@
                             if(smcdata[i] != 0xC2 || smcdata[i + 2] != 0x74 || smcdata[i + 3] != 0x02 || smcdata[i + 8] != 0x74 || smcdata[i + 8] != 0x02)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI1 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
+                                Main.SendInfo("\r\nTDI1 Found @ offset: 0x{0:X} TDI Value: {1} (0x{2:X2})", i, (TmsTdiValues)smcdata[i + 1], smcdata[i + 1]);
                             return smcdata[i + 1];
                         }
                         break;
@@ -290,7 +290,7 @@
                             if(smcdata[i] != 0x7F || smcdata[i + 1] != 0x01 || smcdata[i + 4] != 0xC2 || smcdata[i + 6] != 0x74 || smcdata[i + 7] != 0x01)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI2 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 5], smcdata[i + 5]);
+                                Main.SendInfo("\r\nTDI2 Found @ offset: 0x{0:X} TDI Value: {1} (0x{2:X2})", i, (TmsTdiValues)smcdata[i + 5], smcdata[i + 5]);
                             return smcdata[i + 5];
                         }
                         break;
@@ -299,7 +299,7 @@
                             if(smcdata[i] != 0x76 || smcdata[i + 2] != 0x78 || smcdata[i + 4] != 0x76 || smcdata[i + 6] != 0xD2)
                                 continue;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI3 Found @ offset: 0x{0:X} TDI Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)smcdata[i + 7], smcdata[i + 7]);
+                                Main.SendInfo("\r\nTDI3 Found @ offset: 0x{0:X} TDI Value: {1} (0x{2:X2})", i, (TmsTdiValues)smcdata[i + 7], smcdata[i + 7]);
                             return smcdata[i + 7];
                         }
                         break;
@@ -317,7 +317,7 @@
                     if(smcdata[i + 1] != 0x04 || smcdata[i + 2] != 0x03 || smcdata[i + 3] != 0x02 || smcdata[i + 6] != 0x02)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Found DMA Read Hack @ 0x{0:X}", i);
+                        Main.SendInfo("\r\nFound DMA Read Hack @ 0x{0:X}", i);
                     return true;
                 }
                 return false;
@@ -331,7 +331,7 @@
                     if(smcdata[i + 1] != 0xE0 || smcdata[i + 2] != 0xD8 || smcdata[i + 3] != 0xFC || smcdata[i + 4] != 0x78 || smcdata[i + 6] != 0x76)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Found GPU JTAG Hack @ 0x{0:X}", i);
+                        Main.SendInfo("\r\nFound GPU JTAG Hack @ 0x{0:X}", i);
                     return true;
                 }
                 return false;
@@ -345,7 +345,7 @@
                     if(smcdata[i + 1] != 0x07 || smcdata[i + 2] != 0xD0 || smcdata[i + 3] != 0xE0 || smcdata[i + 4] != 0xF8)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Found PCI Mask Bug @ 0x{0:X}", i);
+                        Main.SendInfo("\r\nFound PCI Mask Bug @ 0x{0:X}", i);
                     smcdata[i + 2] = 0xF8;
                     smcdata[i + 3] = 0xD0;
                     smcdata[i + 4] = 0xE0;
@@ -363,7 +363,7 @@
                        smcdata[i + 8] != 0x00)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Found PNC Charge patch @ 0x{0:X}", i);
+                        Main.SendInfo("\r\nFound PNC Charge patch @ 0x{0:X}", i);
                     return true;
                 }
                 return false;
@@ -376,7 +376,7 @@
                         continue;
                     if(smcdata[i + 1] == 0x00 && smcdata[i + 2] == 0x02 && smcdata[i + 5] == 0xD2 && smcdata[i + 6] == 0x04 && smcdata[i + 7] == 0x02) {
                         if(Main.VerifyVerbosityLevel(1))
-                            Main.SendInfo("Found PNC No Charge patch @ 0x{0:X}", i);
+                            Main.SendInfo("\r\nFound PNC No Charge patch @ 0x{0:X}", i);
                         return true;
                     }
                 }
@@ -394,7 +394,7 @@
                     smcdata[i + 9] = tms;
                     patched = true;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("TMS Patched @ offset: 0x{0:X} TMS Value: 0x{1} ({2:X2})\n", i, (TmsTdiValues)tms, tms);
+                        Main.SendInfo("\r\nTMS Patched @ offset: 0x{0:X} TMS Value: {1} (0x{2:X2})\n", i, (TmsTdiValues)tms, tms);
                 }
                 return patched;
             }
@@ -404,7 +404,7 @@
                 var patched = false;
                 switch(num) {
                     case -1:
-                        Main.SendInfo("Patching TDI in all 4 places...\n");
+                        Main.SendInfo("\r\nPatching TDI in all 4 places...");
                         var ret = false;
                         for(var i = 0; i < 4; i++) {
                             if(SetTdi(ref smcdata, tdi, i))
@@ -418,7 +418,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
+                                Main.SendInfo("\r\nTDI{1} Patched @ offset: 0x{0:X} TDI Value: {2} (0x{3:X2})", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     case 1:
@@ -428,7 +428,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
+                                Main.SendInfo("\r\nTDI{1} Patched @ offset: 0x{0:X} TDI Value: {2} (0x{3:X2})", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     case 2:
@@ -438,7 +438,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
+                                Main.SendInfo("\r\nTDI{1} Patched @ offset: 0x{0:X} TDI Value: {2} (0x{3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     case 3:
@@ -448,7 +448,7 @@
                             smcdata[i + 1] = tdi;
                             patched = true;
                             if(Main.VerifyVerbosityLevel(1))
-                                Main.SendInfo("TDI{1} Patched @ offset: 0x{0:X} TDI Value: 0x{2} ({3:X2})\n", i, num, (TmsTdiValues)tdi, tdi);
+                                Main.SendInfo("\r\nTDI{1} Patched @ offset: 0x{0:X} TDI Value: {2} (0x{3:X2})", i, num, (TmsTdiValues)tdi, tdi);
                         }
                         break;
                     default:
@@ -465,7 +465,7 @@
                     if(smcdata[i + 1] != 0x00 || smcdata[i + 2] != 0x02 || smcdata[i + 5] != 0xD2 || smcdata[i + 7] != 0x02)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Disable PNC Charge patch applied @ 0x{0:X}", i);
+                        Main.SendInfo("\r\nDisable PNC Charge patch applied @ 0x{0:X}", i);
                     smcdata[i + 6] = 0x04;
                     return;
                 }
@@ -480,7 +480,7 @@
                     if(smcdata[i + 1] != 0x07 || smcdata[i + 2] != 0x78 || smcdata[i + 4] != 0xE6 || smcdata[i + 5] != 0xB4 || smcdata[i + 6] != 0x00)
                         continue;
                     if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("Unconditional boot patch applied @ 0x{0:X}", i);
+                        Main.SendInfo("\r\nUnconditional boot patch applied @ 0x{0:X}", i);
                     smcdata[i + 2] = 0x00;
                     smcdata[i + 3] = 0xE5;
                     smcdata[i + 4] = 0x3D;

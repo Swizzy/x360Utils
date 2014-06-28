@@ -24,7 +24,9 @@
             Main.BlockInReader += MainOnBlockInReader;
             Main.MaxBlocksChanged += MainOnMaxBlocksChanged;
             Text = string.Format(Text, version.Major, version.Minor, version.Build);
-            Main.VerbosityLevel = int.MaxValue;
+            verbositylevel.Items.Add(0);
+            verbositylevel.Items.Add(1);
+            verbositylevel.SelectedIndex = verbositylevel.Items.Count -1;
         }
 
         private void MainOnMaxBlocksChanged(object sender, EventArg<int> eventArg) {
@@ -101,27 +103,23 @@
 
         private void GetKeyBtnClick(object sender, EventArgs e) {
             var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != DialogResult.OK)
+            if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
-            bw.DoWork += (o, args) =>
-            {
-                try
-                {
-                    using (var reader = new NANDReader(ofd.FileName))
-                    {
-                        AddOutput("Grabbing CPUKey from NAND: ");
-                        AddOutput(_x360NAND.GetNandCpuKey(reader));
-                    }
-                }
-                catch (X360UtilsException ex)
-                {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
-                AddOutput(Environment.NewLine);
-                AddDone();
-            };
+            bw.DoWork += (o, args) => {
+                             try {
+                                 using(var reader = new NANDReader(ofd.FileName)) {
+                                     AddOutput("Grabbing CPUKey from NAND: ");
+                                     AddOutput(_x360NAND.GetNandCpuKey(reader));
+                                 }
+                             }
+                             catch(X360UtilsException ex) {
+                                 AddOutput("FAILED!");
+                                 AddException(ex.ToString());
+                             }
+                             AddOutput(Environment.NewLine);
+                             AddDone();
+                         };
             bw.RunWorkerCompleted += BwCompleted;
             bw.RunWorkerAsync();
         }
@@ -131,25 +129,21 @@
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
-            bw.DoWork += (o, args) =>
-            {
-                try
-                {
-                    using (var reader = new NANDReader(ofd.FileName))
-                    {
-                        AddOutput("Grabbing FUSES from NAND: ");
-                        AddOutput(Environment.NewLine);
-                        AddOutput(_x360NAND.GetVirtualFuses(reader));
-                    }
-                }
-                catch (X360UtilsException ex)
-                {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
-                AddOutput(Environment.NewLine);
-                AddDone();
-            };
+            bw.DoWork += (o, args) => {
+                             try {
+                                 using(var reader = new NANDReader(ofd.FileName)) {
+                                     AddOutput("Grabbing FUSES from NAND: ");
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput(_x360NAND.GetVirtualFuses(reader));
+                                 }
+                             }
+                             catch(X360UtilsException ex) {
+                                 AddOutput("FAILED!");
+                                 AddException(ex.ToString());
+                             }
+                             AddOutput(Environment.NewLine);
+                             AddDone();
+                         };
             bw.RunWorkerCompleted += BwCompleted;
             bw.RunWorkerAsync();
         }
@@ -272,7 +266,7 @@
         }
 
         private void BwCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs) {
-            if (runWorkerCompletedEventArgs.Error != null)
+            if(runWorkerCompletedEventArgs.Error != null)
                 AddException(runWorkerCompletedEventArgs.Error.ToString());
         }
 
@@ -282,31 +276,27 @@
             if(ofd.ShowDialog() != DialogResult.OK)
                 return;
             var bw = new BackgroundWorker();
-            bw.DoWork += (o, args) =>
-            {
-                try
-                {
-                    using (var reader = new NANDReader(ofd.FileName))
-                    {
-                        AddOutput("Grabbing SMC from NAND: ");
-                        var data = _x360NAND.GetSmc(reader, true);
-                        var smc = new Smc();
-                        var type = smc.GetType(ref data);
-                        AddOutput("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data));
-                        AddOutput("\r\nSMC Type: {0}", type);
-                        if (type == Smc.SmcTypes.Jtag || type == Smc.SmcTypes.RJtag)
-                            Smc.JtagsmcPatches.AnalyseSmc(ref data);
-                        AddOutput("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No");
-                    }
-                }
-                catch (X360UtilsException ex)
-                {
-                    AddOutput("FAILED!");
-                    AddException(ex.ToString());
-                }
-                AddOutput(Environment.NewLine);
-                AddDone();
-            };
+            bw.DoWork += (o, args) => {
+                             try {
+                                 using(var reader = new NANDReader(ofd.FileName)) {
+                                     AddOutput("Grabbing SMC from NAND: ");
+                                     var data = _x360NAND.GetSmc(reader, true);
+                                     var smc = new Smc();
+                                     var type = smc.GetType(ref data);
+                                     AddOutput("\r\nSMC Version: {0} [{1}]", smc.GetVersion(ref data), smc.GetMotherBoardFromVersion(ref data));
+                                     AddOutput("\r\nSMC Type: {0}", type);
+                                     if(type == Smc.SmcTypes.Jtag || type == Smc.SmcTypes.RJtag)
+                                         Smc.JtagsmcPatches.AnalyseSmc(ref data);
+                                     AddOutput("\r\nSMC Glitch Patched: {0}", smc.CheckGlitchPatch(ref data) ? "Yes" : "No");
+                                 }
+                             }
+                             catch(X360UtilsException ex) {
+                                 AddOutput("FAILED!");
+                                 AddException(ex.ToString());
+                             }
+                             AddOutput(Environment.NewLine);
+                             AddDone();
+                         };
             bw.RunWorkerCompleted += BwCompleted;
             bw.RunWorkerAsync();
         }
@@ -567,5 +557,56 @@
         }
 
         private void TestSpecialsbtnClick(object sender, EventArgs e) { new Specials().ShowDialog(); }
+
+        private void testKvInfobtn_Click(object sender, EventArgs e) {
+            _sw = Stopwatch.StartNew();
+            var ofd = new OpenFileDialog();
+            if(ofd.ShowDialog() != DialogResult.OK)
+                return;
+            var nand = ofd.FileName;
+            ofd.FileName = "cpukey.txt";
+            if(ofd.ShowDialog() != DialogResult.OK)
+                return;
+            var bw = new BackgroundWorker();
+            bw.DoWork += (o, args) => {
+                             try {
+                                 var keyutils = new CpukeyUtils();
+                                 var key = keyutils.GetCPUKeyFromTextFile(ofd.FileName);
+                                 using(var reader = new NANDReader(nand)) {
+                                     AddOutput("Grabbing & Decrypting KV From NAND: ");
+                                     var kv = _x360NAND.GetKeyVault(reader, key);
+                                     var kvinfo = new Keyvault();
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("Console ID: {0}", kvinfo.GetConsoleID(ref kv));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("Console Serial: {0}", kvinfo.GetConsoleSerial(ref kv));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("DVDKey: {0}", kvinfo.GetDVDKey(ref kv));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("FCRT Flag: 0x{0:X}", kvinfo.GetFCRTFlag(ref kv));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("FCRT Required: {0}", kvinfo.FCRTRequired(ref kv));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("FCRT Used: {0}", kvinfo.FCRTUsed(ref kv));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("Game Region: {0}", kvinfo.GetGameRegion(ref kv, true));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("MFR-Date (DDMMYY): {0}", kvinfo.GetMfrDate(ref kv, Keyvault.DateFormats.DDMMYY));
+                                     AddOutput(Environment.NewLine);
+                                     AddOutput("OSIG: {0}", kvinfo.GetOSIGData(ref kv));
+                                 }
+                             }
+                             catch(X360UtilsException ex) {
+                                 AddOutput("FAILED!");
+                                 AddException(ex.ToString());
+                             }
+                             AddOutput(Environment.NewLine);
+                             AddDone();
+                         };
+            bw.RunWorkerCompleted += BwCompleted;
+            bw.RunWorkerAsync();
+        }
+
+        private void verbositylevel_SelectedIndexChanged(object sender, EventArgs e) { Main.VerbosityLevel = int.Parse(verbositylevel.Text); }
     }
 }

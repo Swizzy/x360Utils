@@ -65,7 +65,7 @@
                 }
             }
             else if(Main.VerifyVerbosityLevel(1))
-                Main.SendInfo(firsttry ? "Block 1 is bad!" : "The last system block is bad!");
+                Main.SendInfo(firsttry ? "\r\nBlock 1 is bad!" : "\r\nThe last system block is bad!");
             if(firsttry)
                 return DetectSpareType(reader, false);
             throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownMetaType);

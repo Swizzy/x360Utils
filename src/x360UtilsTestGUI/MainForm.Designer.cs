@@ -39,6 +39,7 @@
             this.getsmcbtn = new System.Windows.Forms.Button();
             this.outtab = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.verbositylevel = new System.Windows.Forms.ComboBox();
             this.outbox = new System.Windows.Forms.RichTextBox();
             this.outmenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -53,6 +54,7 @@
             this.TestFsParserbtn = new System.Windows.Forms.Button();
             this.ExtractCurrentFSbtn = new System.Windows.Forms.Button();
             this.TestSpecialsbtn = new System.Windows.Forms.Button();
+            this.testKvInfobtn = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -157,6 +159,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.verbositylevel);
             this.tabPage1.Controls.Add(this.outbox);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
             this.tabPage1.Name = "tabPage1";
@@ -165,6 +168,17 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Output";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // verbositylevel
+            // 
+            this.verbositylevel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.verbositylevel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.verbositylevel.FormattingEnabled = true;
+            this.verbositylevel.Location = new System.Drawing.Point(673, 6);
+            this.verbositylevel.Name = "verbositylevel";
+            this.verbositylevel.Size = new System.Drawing.Size(34, 21);
+            this.verbositylevel.TabIndex = 9;
+            this.verbositylevel.SelectedIndexChanged += new System.EventHandler(this.verbositylevel_SelectedIndexChanged);
             // 
             // outbox
             // 
@@ -304,6 +318,7 @@
             // 
             // TestSpecialsbtn
             // 
+            this.TestSpecialsbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.TestSpecialsbtn.Location = new System.Drawing.Point(728, 283);
             this.TestSpecialsbtn.Name = "TestSpecialsbtn";
             this.TestSpecialsbtn.Size = new System.Drawing.Size(372, 23);
@@ -312,6 +327,18 @@
             this.TestSpecialsbtn.UseVisualStyleBackColor = true;
             this.TestSpecialsbtn.Click += new System.EventHandler(this.TestSpecialsbtnClick);
             // 
+            // testKvInfobtn
+            // 
+            this.testKvInfobtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.testKvInfobtn.Location = new System.Drawing.Point(728, 181);
+            this.testKvInfobtn.Margin = new System.Windows.Forms.Padding(2);
+            this.testKvInfobtn.Name = "testKvInfobtn";
+            this.testKvInfobtn.Size = new System.Drawing.Size(184, 23);
+            this.testKvInfobtn.TabIndex = 6;
+            this.testKvInfobtn.Text = "Test KV Info";
+            this.testKvInfobtn.UseVisualStyleBackColor = true;
+            this.testKvInfobtn.Click += new System.EventHandler(this.testKvInfobtn_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -319,6 +346,7 @@
             this.ClientSize = new System.Drawing.Size(1112, 360);
             this.Controls.Add(this.TestSpecialsbtn);
             this.Controls.Add(this.progressBar1);
+            this.Controls.Add(this.testKvInfobtn);
             this.Controls.Add(this.TestFsParserbtn);
             this.Controls.Add(this.TestFCRTbtn);
             this.Controls.Add(this.outtab);
@@ -372,6 +400,8 @@
         private System.Windows.Forms.Button TestFsParserbtn;
         private System.Windows.Forms.Button ExtractCurrentFSbtn;
         private System.Windows.Forms.Button TestSpecialsbtn;
+        private System.Windows.Forms.Button testKvInfobtn;
+        private System.Windows.Forms.ComboBox verbositylevel;
 
     }
 }
