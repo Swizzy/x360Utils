@@ -32,7 +32,8 @@
                 MetaType = NANDSpare.DetectSpareType(this);
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nMetaType: {0}\r\n", MetaType);
-                Main.SendInfo("Checking for bad blocks...");
+                if (Main.VerifyVerbosityLevel(1))
+                    Main.SendInfo("Checking for bad blocks...");
                 try {
                     FindBadBlocks();
                 }
