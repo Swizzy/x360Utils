@@ -84,12 +84,19 @@
     <Compile Include="x360UtilsException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\AIO_SMC_Patches.txt" />
+    <Content Include="NAND\SMCPatches\1.10.xml" />
+    <Content Include="NAND\SMCPatches\1.13.xml" />
+    <Content Include="NAND\SMCPatches\1.50.xml" />
+    <Content Include="NAND\SMCPatches\1.51.xml" />
+    <Content Include="NAND\SMCPatches\1.53.xml" />
+    <Content Include="NAND\SMCPatches\1.60.xml" />
+    <Content Include="NAND\SMCPatches\1.90.xml" />
+    <Content Include="NAND\SMCPatches\2.03.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties BuildVersion_BuildVersioningStyle="None.None.Increment.None" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_UpdateFileVersion="True" />
+      <UserProperties BuildVersion_UpdateFileVersion="True" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_BuildVersioningStyle="None.None.Increment.None" />
     </VisualStudio>
   </ProjectExtensions>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

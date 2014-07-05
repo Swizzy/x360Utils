@@ -1,5 +1,10 @@
 ﻿namespace x360Utils.NAND {
     using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Reflection;
+    using System.Xml;
+    using x360Utils.Common;
 
     public sealed class Smc {
         #region SMCTypes enum
@@ -132,6 +137,32 @@
                     Main.SendInfo("\r\nSMC Glitch Patched @ offset: 0x{0:X}", i);
             }
             return patched;
+        }
+
+        private SmcPatchSet GetPatchSet(string version) {
+            using(var stream = Assembly.GetAssembly(typeof(Smc)).GetManifestResourceStream(string.Format("{0}.SMCPatches.{1}.xml", typeof(Smc).Namespace, version))) {
+                if(stream == null)
+                    throw new Exception("Patchset not found! {0}");
+                using(var xml = XmlReader.Create(stream))
+                    return new SmcPatchSet(xml);
+            }
+        }
+
+        public bool JtagPatch(ref byte[] smcdata) {
+            try {
+                DecryptCheck(ref smcdata);
+                foreach(var patch in GetPatchSet(GetVersion(ref smcdata)).Patches) {
+                    if(Main.VerifyVerbosityLevel(1))
+                        Main.SendInfo("\r\nSMC Patched @ offset: 0x{0:X} (Size of patch: 0x{1:X}", patch.Offset, patch.Patch.Length);
+                    Buffer.BlockCopy(patch.Patch, 0, smcdata, patch.Offset, patch.Patch.Length);
+                }
+                return true;
+            }
+            catch(Exception ex) {
+                if (ex != null)
+                    throw;
+                return false;
+            }
         }
 
         public bool CheckGlitchPatch(ref byte[] smcdata) {
@@ -492,5 +523,33 @@
         }
 
         #endregion
+
+        private class SmcPatchSet {
+            public readonly PatchData[] Patches;
+
+            public SmcPatchSet(XmlReader xmlSource) {
+                var patches = new List<PatchData>();
+                while(xmlSource.Read()) {
+                    if(!xmlSource.IsStartElement())
+                        continue;
+                    if(xmlSource["offset"] == null)
+                        continue;
+                    var offset = int.Parse(xmlSource["offset"], NumberStyles.HexNumber);
+                    xmlSource.Read();
+                    patches.Add(new PatchData(offset, StringUtils.HexToArray(xmlSource.Value)));
+                }
+                Patches = patches.ToArray();
+            }
+
+            public class PatchData {
+                public readonly int Offset;
+                public readonly byte[] Patch;
+
+                public PatchData(int offset, byte[] patch) {
+                    Offset = offset;
+                    Patch = patch;
+                }
+            }
+        }
     }
 }

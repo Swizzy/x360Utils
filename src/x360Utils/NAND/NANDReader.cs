@@ -14,7 +14,7 @@
         private readonly bool _doSendPosition;
         private bool _forcedSb;
 
-        public NANDReader(string file) {
+        public NANDReader(string file, bool fastScan = false) {
             Debug.SendDebug("Creating NANDReader for: {0}", file);
             _binaryReader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
             if(!VerifyMagic())
@@ -23,7 +23,7 @@
                 Main.SendInfo("\r\nChecking for spare... ");
             HasSpare = CheckForSpare();
             if(HasSpare) {
-                if (Main.VerifyVerbosityLevel(1))
+                if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("Image has Spare...");
                 Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4200));
                 _doSendPosition = true;
@@ -32,7 +32,9 @@
                 MetaType = NANDSpare.DetectSpareType(this);
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\nMetaType: {0}\r\n", MetaType);
-                if (Main.VerifyVerbosityLevel(1))
+                if(fastScan)
+                    return;
+                if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("Checking for bad blocks...");
                 try {
                     FindBadBlocks();
@@ -43,7 +45,7 @@
                 }
             }
             else {
-                if (Main.VerifyVerbosityLevel(1))
+                if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("Image does NOT have Spare...");
                 if(Main.VerifyVerbosityLevel(1))
                     Main.SendInfo("\r\n");
@@ -420,7 +422,7 @@
                 }
                 RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSb ? 0x20FF0 : 0x41F0) : 0x41F0, SeekOrigin.Current);
             }
-            if (Main.VerifyVerbosityLevel(1))
+            if(Main.VerifyVerbosityLevel(1))
                 Main.SendInfo(Environment.NewLine);
             if(_badBlocks.Count > 0)
                 return _badBlocks.ToArray();
