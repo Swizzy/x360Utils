@@ -42,7 +42,8 @@ namespace x360Utils.Common {
 #if WINAPI
             ushort dosDate, dosTime;
             var ft = dateTime.ToFileTime();
-            FileTimeToDosDateTime(ref ft, out dosDate, out dosTime);
+            if (!FileTimeToDosDateTime(ref ft, out dosDate, out dosTime))
+                throw new Win32Exception();
             return (uint)(dosDate << 16 | dosTime);
 #else
             //var ret = 0;
