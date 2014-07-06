@@ -63,18 +63,20 @@
             public readonly long[] Blocks;
             public readonly string Filename;
             public readonly uint Size;
-            public readonly long TimeStamp;
+            public readonly uint TimeStamp;
 
-            public FileSystemEntry(string filename, uint size, long timeStamp, long[] blocks) {
+            public FileSystemEntry(string filename, uint size, uint timeStamp, long[] blocks) {
                 Blocks = blocks;
                 Filename = filename;
                 Size = size;
                 TimeStamp = timeStamp;
             }
 
+            public DateTime DateTime { get { return DateTimeUtils.DosTimeStampToDateTime(TimeStamp); } }
+
             public override string ToString() {
                 var sb = new StringBuilder();
-                sb.AppendFormat("FSEntry: {0} Size: 0x{1:X} Timestamp: 0x{2:X} Blocks: 0x{3:X}", Filename, Size, TimeStamp, Blocks[0]);
+                sb.AppendFormat("FSEntry: {0} Size: 0x{1:X} Timestamp: 0x{2:X} ({3}) Blocks: 0x{4:X}", Filename, Size, TimeStamp, DateTime, Blocks[0]);
                 if(Blocks.Length > 1) {
                     for(var i = 1; i < Blocks.Length; i++)
                         sb.AppendFormat(" -> 0x{0:X}", Blocks[i]);
@@ -92,6 +94,21 @@
                     left -= BitOperations.GetSmallest(left, 0x4000);
                 }
                 return ret.ToArray();
+            }
+
+            public void ExtractToFile(ref NANDReader reader, string filename) {
+                using(var writer = new BinaryWriter(File.OpenWrite(filename))) {
+                    var left = (int)Size;
+                    var baseBlock = reader.MetaType != NANDSpare.MetaType.MetaType2 ? 0 : GetBaseBlockForMeta2(ref reader);
+                    foreach(var offset in Blocks) {
+                        reader.SeekToLbaEx((ushort)(baseBlock + offset));
+                        writer.Write(reader.ReadBytes(BitOperations.GetSmallest(left, 0x4000)));
+                        left -= BitOperations.GetSmallest(left, 0x4000);
+                    }
+                }
+                File.SetCreationTime(filename, DateTime);
+                File.SetLastAccessTime(filename, DateTime);
+                File.SetLastWriteTime(filename, DateTime);
             }
         }
     }
