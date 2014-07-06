@@ -544,7 +544,8 @@
                 Directory.CreateDirectory(dir);
                 foreach(var fileSystemEntry in entries) {
                     AddOutput("Extracting: {0}...{1}", fileSystemEntry.Filename, Environment.NewLine);
-                    File.WriteAllBytes(Path.Combine(dir, fileSystemEntry.Filename), fileSystemEntry.GetData(ref reader));
+                    fileSystemEntry.ExtractToFile(ref reader, Path.Combine(dir, fileSystemEntry.Filename));
+                    //File.WriteAllBytes(Path.Combine(dir, fileSystemEntry.Filename), fileSystemEntry.GetData(ref reader));
                 }
             }
             catch(Exception ex) {
