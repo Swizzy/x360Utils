@@ -26,7 +26,7 @@
             Text = string.Format(Text, version.Major, version.Minor, version.Build);
             verbositylevel.Items.Add(0);
             verbositylevel.Items.Add(1);
-            verbositylevel.SelectedIndex = verbositylevel.Items.Count -1;
+            verbositylevel.SelectedIndex = verbositylevel.Items.Count - 1;
         }
 
         private void MainOnMaxBlocksChanged(object sender, EventArg<int> eventArg) {
@@ -609,5 +609,88 @@
         }
 
         private void verbositylevel_SelectedIndexChanged(object sender, EventArgs e) { Main.VerbosityLevel = int.Parse(verbositylevel.Text); }
+
+        private void bootloaderbtn_Click(object sender, EventArgs e) {
+            _sw = Stopwatch.StartNew();
+            var ofd = new OpenFileDialog();
+            if(ofd.ShowDialog() != DialogResult.OK)
+                return;
+            var nand = ofd.FileName;
+            ofd.FileName = "cpukey.txt";
+            var nokey = ofd.ShowDialog() != DialogResult.OK;
+            var bw = new BackgroundWorker();
+            bw.DoWork += (o, args) => {
+                             try {
+                                 var keyutils = new CpukeyUtils();
+                                 var key = "";
+                                 if(!nokey)
+                                     key = keyutils.GetCPUKeyFromTextFile(ofd.FileName);
+                                 using(var reader = new NANDReader(nand)) {
+                                     AddOutput("Getting bootloaders...{0}", Environment.NewLine);
+                                     var bls = _x360NAND.GetBootLoaders(reader, true);
+                                     if(nokey) {
+                                         try {
+                                             AddOutput("Attempting to grab key from NAND... {0}", Environment.NewLine);
+                                             key = _x360NAND.GetNandCpuKey(reader);
+                                             AddOutput("Key found! {0}{1}", key, Environment.NewLine);
+                                             nokey = false;
+                                         }
+                                         catch(X360UtilsException ex) {
+                                             if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataNotFound)
+                                                 throw;
+                                         }
+                                     }
+                                     byte[] lastkey = null;
+                                     foreach(var bl in bls) {
+                                         AddOutput("Bootloader Information for: {0}{1}", bl.Type, Environment.NewLine);
+                                         AddOutput("Build: {0}{1}", bl.Build, Environment.NewLine);
+                                         AddOutput("Size: 0x{0:X}{1}", bl.Size, Environment.NewLine);
+                                         AddOutput("Encryption type: {0}{1}", bl.CryptoType, Environment.NewLine);
+                                         if(!nokey) {
+                                             if(lastkey != null)
+                                                 bl.Key = lastkey;
+                                             if(!bl.Decrypted) {
+                                                 try {
+                                                     AddOutput("Decrypting the bootloader...{0}", Environment.NewLine);
+                                                     if(bl.CryptoType != Cryptography.BlEncryptionTypes.MfgCbb && bl.Type == Bootloader.BootLoaderTypes.CBB) {
+                                                         AddOutput("Decrypting with key: {0}{1}", key, Environment.NewLine);
+                                                         bl.Decrypt(StringUtils.HexToArray(key));
+                                                         AddOutput("Decryption result: {0}{1}", bl.Decrypted ? "Success!" : "Failed!", Environment.NewLine);
+                                                     }
+                                                     else if(bl.CryptoType == Cryptography.BlEncryptionTypes.MfgCbb && bl.Type == Bootloader.BootLoaderTypes.CBB) {
+                                                         AddOutput("Decrypting with key: {0}{1}", Main.MfgBlKey, Environment.NewLine);
+                                                         bl.Decrypt(Main.MfgBlKeyBytes);
+                                                         AddOutput("Decryption result: {0}{1}", bl.Decrypted ? "Success!" : "Failed!", Environment.NewLine);
+                                                     }
+                                                     else {
+                                                         AddOutput("Decrypting with key: {0}{1}", Main.FirstBlKey, Environment.NewLine);
+                                                         bl.Decrypt(Main.FirstBlKeyBytes);
+                                                         AddOutput("Decryption result: {0}{1}", bl.Decrypted ? "Success!" : "Failed!", Environment.NewLine);
+                                                     }
+                                                 }
+                                                 catch(NotImplementedException) {
+                                                     AddOutput("Not implemented for this bootloader version...{0}", Environment.NewLine);
+                                                 }
+                                             }
+                                             if (bl.OutKey != null)
+                                                 AddOutput("OutKey: {0}{1}", StringUtils.ArrayToHex(bl.OutKey), Environment.NewLine);
+                                             if (bl.Key != null)
+                                                 AddOutput("Key: {0}{1}", StringUtils.ArrayToHex(bl.Key), Environment.NewLine);
+                                             
+                                             lastkey = bl.OutKey;
+                                         }
+                                     }
+                                 }
+                             }
+                             catch(X360UtilsException ex) {
+                                 AddOutput("FAILED!");
+                                 AddException(ex.ToString());
+                             }
+                             AddOutput(Environment.NewLine);
+                             AddDone();
+                         };
+            bw.RunWorkerCompleted += BwCompleted;
+            bw.RunWorkerAsync();
+        }
     }
 }
