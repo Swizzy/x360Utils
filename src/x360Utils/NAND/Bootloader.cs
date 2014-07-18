@@ -7,6 +7,7 @@
         public readonly uint Build;
         public readonly uint Offset;
         public readonly uint Size;
+        public readonly uint StartLba;
         public readonly BootLoaderTypes Type;
         private readonly Cryptography _crypto = new Cryptography();
         public byte[] Data;
@@ -40,6 +41,7 @@
 
         public Bootloader(NANDReader reader, int count = 0, bool readitin = false) {
             Offset = (uint)(reader.Lba * 0x4000 + reader.Position % 0x4000);
+            StartLba = reader.Lba;
             var header = reader.ReadBytes(0x10);
             Type = GetTypeFromHeader(ref header, count);
             Size = GetBootloaderSize(ref header);

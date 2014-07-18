@@ -1,6 +1,7 @@
 ﻿namespace x360Utils.NAND {
     using System;
     using System.IO;
+    using x360Utils.Common;
 
     public static class NANDSpare {
         #region MetaType enum
@@ -15,9 +16,9 @@
 
         #endregion
 
-        internal static ushort GetMmcMobileBlock(ref byte[] data, byte mobileType) { return Common.BitOperations.Swap(BitConverter.ToUInt16(data, 0x1C + (mobileType * 0x4))); }
+        internal static ushort GetMmcMobileBlock(ref byte[] data, byte mobileType) { return BitOperations.Swap(BitConverter.ToUInt16(data, 0x1C + (mobileType * 0x4))); }
 
-        internal static ushort GetMmcMobileSize(ref byte[] data, byte mobileType) { return Common.BitOperations.Swap(BitConverter.ToUInt16(data, 0x1E + (mobileType * 0x4))); }
+        internal static ushort GetMmcMobileSize(ref byte[] data, byte mobileType) { return BitOperations.Swap(BitConverter.ToUInt16(data, 0x1E + (mobileType * 0x4))); }
 
         public static void TestMetaUtils(string file) {
             var reader = new NANDReader(file);
@@ -385,6 +386,43 @@
                     throw new NotSupportedException();
             }
         }
+
+        public static MetaType DetectSpareType(SmartNANDReader reader, bool firsttry = true) {
+            if(!reader.HasSpare)
+                return MetaType.MetaTypeNone;
+            if(firsttry)
+                reader.RawSeek(0x4400, SeekOrigin.Begin);
+            else
+                reader.RawSeek(reader.RawLength - 0x4000, SeekOrigin.Begin);
+            var tmp = reader.RawReadBytes(0x10);
+            var mdata = GetMetaData(tmp);
+            if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType0)) {
+                if(GetLbaRaw0(ref mdata) == 1)
+                    return MetaType.MetaType0;
+                if(GetLbaRaw1(ref mdata) == 1)
+                    return MetaType.MetaType1;
+            }
+            if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
+                if(firsttry)
+                    reader.RawSeek(0x21200, SeekOrigin.Begin);
+                else if(reader.RawLength <= 0x4200000)
+                    reader.RawSeek(reader.RawLength - 0x4000, SeekOrigin.Begin);
+                else
+                    reader.RawSeek(0x4200000 - 0x4000, SeekOrigin.Begin);
+                tmp = reader.RawReadBytes(0x10);
+                if(!CheckIsBadBlockSpare(ref tmp, MetaType.MetaType2)) {
+                    if(BlockIdFromSpare(ref tmp, MetaType.MetaType2) == 1)
+                        return MetaType.MetaType2;
+                }
+            }
+            else if(Main.VerifyVerbosityLevel(1))
+                Main.SendInfo(firsttry ? "\r\nBlock 1 is bad!" : "\r\nThe last system block is bad!");
+            if(firsttry)
+                return DetectSpareType(reader, false);
+            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.UnkownMetaType);
+        }
+
+        public static bool CheckIsBadBlock(MetaData meta) { return (GetBadBlockMarker(ref meta) != 0xFF); }
 
         #region Nested type: MetaData
 
