@@ -31,7 +31,7 @@
             get {
                 var offset = _binaryReader.BaseStream.Position;
                 if(HasSpare)
-                    offset = CalculateLba(offset) * 0x4200 + CalculatePage(CalculateLbaOffset(offset)) + CalculatePageOffset(CalculateLbaOffset(offset));
+                    offset = (Lba * 0x4200) + CalculatePage(CalculateLbaOffset(offset)) + CalculatePageOffset(CalculateLbaOffset(offset));
                 return offset;
             }
             set { Seek(value, SeekOrigin.Begin); }
@@ -42,24 +42,30 @@
         public override long Seek(long offset, SeekOrigin origin) {
             Debug.SendDebug("Old position: 0x{0:X}", _binaryReader.BaseStream.Position);
             Debug.SendDebug("Seeking to offset: 0x{0:X} (LBA: {1}) origin: {2}", offset, CalculateLba(offset), origin);
-            Lba = CalculateLba(offset);
-            if(MetaType == NANDSpare.MetaType.MetaTypeNone)
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone) {
                 RawSeek(offset, origin);
-            else if(origin == SeekOrigin.Current) {
-                offset += CalculateLbaOffset(Position);
-                SeekToSmallBlock(CalculateLba(offset) + Lba);
-                if(CalculateLbaOffset(offset) > 0)
-                    SeekToLbaOffset(CalculateLbaOffset(offset));
+                Lba = CalculateLba(RawPosition);
             }
-            else if(origin == SeekOrigin.Begin) {
-                SeekToSmallBlock(CalculateLba(offset));
-                if(CalculateLbaOffset(offset) > 0)
-                    SeekToLbaOffset(CalculateLbaOffset(offset));
-            }
-            else if(origin == SeekOrigin.End) {
-                SeekToSmallBlock(LastBlock() - CalculateLba(offset));
-                if(CalculateLbaOffset(offset) > 0)
-                    SeekToLbaOffset(CalculateLbaOffset(offset) * -1);
+            else switch(origin) {
+                case SeekOrigin.Current:
+                    Lba = CalculateLba(offset) + Lba;
+                    offset += CalculateLbaOffset(Position);
+                    SeekToSmallBlock(Lba);
+                    if(CalculateLbaOffset(offset) > 0)
+                        SeekToLbaOffset(CalculateLbaOffset(offset));
+                    break;
+                case SeekOrigin.Begin:
+                    Lba = CalculateLba(offset);
+                    SeekToSmallBlock(CalculateLba(offset));
+                    if(CalculateLbaOffset(offset) > 0)
+                        SeekToLbaOffset(CalculateLbaOffset(offset));
+                    break;
+                case SeekOrigin.End:
+                    Lba = CalculateLba(offset);
+                    SeekToSmallBlock(LastBlock() - CalculateLba(offset));
+                    if(CalculateLbaOffset(offset) > 0)
+                        SeekToLbaOffset(CalculateLbaOffset(offset) * -1);
+                    break;
             }
             Debug.SendDebug("New position: 0x{0:X}", _binaryReader.BaseStream.Position);
             if(_doSendPosition)
@@ -71,6 +77,8 @@
 
         public override int Read(byte[] buffer, int index, int count) {
             Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone)
+                return _binaryReader.Read(buffer, index, count);
             throw new NotImplementedException();
         }
 
