@@ -12,7 +12,9 @@
             Default = 0,
             Cbb = 0x800,
             MfgCbb = 0x801,
-            CpuKey = 0x1800
+            CpuKey = 0x1800,
+            Unknown = ushort.MaxValue,
+            NotSupported = ushort.MaxValue
         }
 
         #endregion

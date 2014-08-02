@@ -2,13 +2,31 @@
     using System;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using x360Utils.Common;
 
     public static class Main {
+        public enum VerbosityLevels {
+            Minimum = 0,
+            Low = 1,
+            Medium = 2,
+            High = 3,
+            Debug = 2147483646,
+            FullDebug = int.MaxValue
+        }
+
+        public const string FirstBlKey = "DD88AD0C9ED669E7B56794FB68563EFA";
+        public const string MfgBlKey = "00000000000000000000000000000000";
+        public static readonly byte[] FirstBlKeyBytes;
+        public static readonly byte[] MfgBlKeyBytes = new byte[16];
+
         private static readonly Version AppVersion = Assembly.GetAssembly(typeof(Main)).GetName().Version;
 
         public static int VerbosityLevel;
 
-        static Main() { VerbosityLevel = 0; }
+        static Main() {
+            VerbosityLevel = 0;
+            FirstBlKeyBytes = StringUtils.HexToArray(FirstBlKey);
+        }
 
         public static string Version {
             get {
@@ -59,5 +77,7 @@
             mbc(null, new EventArg<int>(blocks));
             SendReaderBlock(0);
         }
+
+        public static bool VerifyVerbosityLevel(VerbosityLevels level) { return VerifyVerbosityLevel((int)level); }
     }
 }

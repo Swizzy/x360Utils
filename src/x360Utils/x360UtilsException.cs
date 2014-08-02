@@ -19,7 +19,8 @@
             DataDecryptionFailed,
             UnkownMetaType,
             BadBlockDetected,
-            UnkownPatchset
+            UnkownPatchset,
+            BadMagic
         }
 
         #endregion

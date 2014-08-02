@@ -90,6 +90,7 @@
 
         public override int Read(byte[] buffer, int index, int count) {
             Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
+            Lba = (uint)((Position + count) / 0x4000);
             if(!HasSpare) {
                 if(_doSendPosition)
                     Main.SendReaderBlock(Position + count);
@@ -100,15 +101,13 @@
             var pos = (int)_binaryReader.BaseStream.Position % 0x210;
             int size;
             if(pos != 0) {
-                size = (0x200 - pos);
-                if(size > count)
-                    size = count;
+                size = BitOperations.GetSmallest((0x200 - pos), count);
                 pos = _binaryReader.Read(buffer, index, size);
                 if(size == count)
                     return pos;
             }
             while(pos < count) {
-                size = count - pos < 0x200 ? count - pos : 0x200;
+                size = BitOperations.GetSmallest(count - pos, 0x200);
                 pos += _binaryReader.Read(buffer, pos + index, size);
                 Seek(0x10, SeekOrigin.Current);
             }
@@ -120,33 +119,13 @@
                 RawSeek(0x10, SeekOrigin.Current);
             if(_doSendPosition)
                 Main.SendReaderBlock(Position + 1);
+            Lba = (uint)((Position + 1) / 0x4000);
             return _binaryReader.ReadByte();
         }
 
         public byte[] ReadBytes(int count) {
-            Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
-            if(!HasSpare) {
-                if(_doSendPosition)
-                    Main.SendReaderBlock(Position + count);
-                return _binaryReader.ReadBytes(count);
-            }
-            if(_doSendPosition)
-                Main.SendReaderBlock(Position + count);
             var buffer = new byte[count];
-            var pos = (int)_binaryReader.BaseStream.Position % 0x210;
-            int size, index = 0;
-            if(pos != 0) {
-                size = (0x200 - pos);
-                if(size > count)
-                    size = count;
-                index += Read(buffer, index, size);
-                if(size == count)
-                    return buffer;
-            }
-            while(index < count) {
-                size = count - index < 0x200 ? count - index : 0x200;
-                index += Read(buffer, index, size);
-            }
+            Read(buffer, 0, count);
             return buffer;
         }
 
@@ -158,6 +137,8 @@
 
         #endregion Overrides of Stream
 
+        public uint Lba { get; private set; }
+
         public FsRootEntry FsRoot { get; private set; }
 
         public long RawLength { get { return _binaryReader.BaseStream.Length; } }
@@ -167,6 +148,7 @@
         public MobileEntry[] MobileArray { get; private set; }
 
         public void SeekToLbaEx(uint lba) {
+            Lba = lba;
             if(_badBlocks.Contains(lba)) {
                 var block = MetaType == NANDSpare.MetaType.MetaType2 ? 0xFFF : 0x3FF;
                 while(true) {

@@ -1,4 +1,5 @@
-- Add badblock management to the NANDReader
+- Fix the badblock management in the Read method of SmartNANDReader (and then test it, once done it'll replace NANDReader)
+- Add JTAG SMC Patch engine (dynamic one if possible)
 - Add more tests to the Test GUI
-- Add missing features
-- Fix bugs
+- Add missing features (dunno what more to add right now, but... there's probably something...)
+- Fix bugs (if you can find any?)

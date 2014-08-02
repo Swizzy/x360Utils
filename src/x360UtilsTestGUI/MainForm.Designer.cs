@@ -55,6 +55,7 @@
             this.ExtractCurrentFSbtn = new System.Windows.Forms.Button();
             this.TestSpecialsbtn = new System.Windows.Forms.Button();
             this.testKvInfobtn = new System.Windows.Forms.Button();
+            this.bootloaderbtn = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.outtab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -339,11 +340,23 @@
             this.testKvInfobtn.UseVisualStyleBackColor = true;
             this.testKvInfobtn.Click += new System.EventHandler(this.testKvInfobtn_Click);
             // 
+            // bootloaderbtn
+            // 
+            this.bootloaderbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.bootloaderbtn.Location = new System.Drawing.Point(917, 181);
+            this.bootloaderbtn.Name = "bootloaderbtn";
+            this.bootloaderbtn.Size = new System.Drawing.Size(183, 23);
+            this.bootloaderbtn.TabIndex = 9;
+            this.bootloaderbtn.Text = "Test Bootloaders";
+            this.bootloaderbtn.UseVisualStyleBackColor = true;
+            this.bootloaderbtn.Click += new System.EventHandler(this.bootloaderbtn_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1112, 360);
+            this.Controls.Add(this.bootloaderbtn);
             this.Controls.Add(this.TestSpecialsbtn);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.testKvInfobtn);
@@ -402,6 +415,7 @@
         private System.Windows.Forms.Button TestSpecialsbtn;
         private System.Windows.Forms.Button testKvInfobtn;
         private System.Windows.Forms.ComboBox verbositylevel;
+        private System.Windows.Forms.Button bootloaderbtn;
 
     }
 }
