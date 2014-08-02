@@ -30,13 +30,15 @@
         {
             this.jfbtn = new System.Windows.Forms.Button();
             this.xkbtn = new System.Windows.Forms.Button();
+            this.spiderbtn = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // jfbtn
             // 
-            this.jfbtn.Location = new System.Drawing.Point(12, 12);
+            this.jfbtn.Location = new System.Drawing.Point(16, 15);
+            this.jfbtn.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.jfbtn.Name = "jfbtn";
-            this.jfbtn.Size = new System.Drawing.Size(171, 23);
+            this.jfbtn.Size = new System.Drawing.Size(228, 28);
             this.jfbtn.TabIndex = 0;
             this.jfbtn.Text = "Extract JF Files";
             this.jfbtn.UseVisualStyleBackColor = true;
@@ -44,22 +46,36 @@
             // 
             // xkbtn
             // 
-            this.xkbtn.Location = new System.Drawing.Point(12, 41);
+            this.xkbtn.Location = new System.Drawing.Point(16, 50);
+            this.xkbtn.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.xkbtn.Name = "xkbtn";
-            this.xkbtn.Size = new System.Drawing.Size(171, 23);
+            this.xkbtn.Size = new System.Drawing.Size(228, 28);
             this.xkbtn.TabIndex = 0;
             this.xkbtn.Text = "Extract Xk3y Files";
             this.xkbtn.UseVisualStyleBackColor = true;
             this.xkbtn.Click += new System.EventHandler(this.xkbtn_Click);
             // 
+            // spiderbtn
+            // 
+            this.spiderbtn.Location = new System.Drawing.Point(16, 86);
+            this.spiderbtn.Margin = new System.Windows.Forms.Padding(4);
+            this.spiderbtn.Name = "spiderbtn";
+            this.spiderbtn.Size = new System.Drawing.Size(228, 28);
+            this.spiderbtn.TabIndex = 0;
+            this.spiderbtn.Text = "Extract X360Spider Files";
+            this.spiderbtn.UseVisualStyleBackColor = true;
+            this.spiderbtn.Click += new System.EventHandler(this.spiderbtn_Click);
+            // 
             // Specials
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(195, 76);
+            this.ClientSize = new System.Drawing.Size(260, 127);
+            this.Controls.Add(this.spiderbtn);
             this.Controls.Add(this.xkbtn);
             this.Controls.Add(this.jfbtn);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Specials";
@@ -75,5 +91,6 @@
 
         private System.Windows.Forms.Button jfbtn;
         private System.Windows.Forms.Button xkbtn;
+        private System.Windows.Forms.Button spiderbtn;
     }
 }
