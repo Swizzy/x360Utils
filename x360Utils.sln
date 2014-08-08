@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "x360Utils", "x360Utils\x360Utils.csproj", "{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{945B2732-FB40-4E75-A102-EFEF4387119A}"
+	ProjectSection(SolutionItems) = preProject
+		..\README.md = ..\README.md
+		..\TODO.txt = ..\TODO.txt
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug_NoPrint|Any CPU = Debug_NoPrint|Any CPU
+		Debug|Any CPU = Debug|Any CPU
+		Release_PrintDebug|Any CPU = Release_PrintDebug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Debug_NoPrint|Any CPU.ActiveCfg = Debug_NoPrint|Any CPU
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Debug_NoPrint|Any CPU.Build.0 = Debug_NoPrint|Any CPU
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Release_PrintDebug|Any CPU.ActiveCfg = Release_PrintDebug|Any CPU
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Release_PrintDebug|Any CPU.Build.0 = Release_PrintDebug|Any CPU
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C5D1FE2-CE7E-41EE-A18D-9F38AD4C073C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
