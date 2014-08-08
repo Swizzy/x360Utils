@@ -4,7 +4,7 @@
     using System.Globalization;
     using System.Reflection;
     using System.Xml;
-    using x360Utils.Common;
+    using global::x360Utils.Common;
 
     public sealed class Smc {
         #region SMCTypes enum

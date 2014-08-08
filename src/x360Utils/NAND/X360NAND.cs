@@ -3,15 +3,15 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
-    using x360Utils.Common;
-    using x360Utils.CPUKey;
+    using global::x360Utils.Common;
+    using global::x360Utils.CPUKey;
 
     public sealed class X360NAND {
         private readonly Cryptography _crypto = new Cryptography();
 
         public byte[] GetFcrt(NANDReader reader) {
             if(reader.FsRoot == null)
-                reader.ScanForFsRootAndMobile();
+                reader.ScanForFsRootAndMobiles();
             var nandfs = new NANDFileSystem();
             var fs = nandfs.ParseFileSystem(ref reader);
             foreach(var fileSystemEntry in fs) {
@@ -22,7 +22,7 @@
         }
 
         public byte[] GetKeyVault(NANDReader reader, bool decryptWithKeyInNand = false) {
-            reader.SeekToLbaEx(1); // Seek to the KV Block
+            reader.Lba = 1; // Seek to the KV Block
             //reader.Seek(0x4000, SeekOrigin.Begin);
             if(!decryptWithKeyInNand)
                 return reader.ReadBytes(0x4000);
@@ -68,11 +68,11 @@
 
         public byte[] GetSmcConfig(NANDReader reader) {
             if(reader.RawLength == 0x1080000) // 16MB NAND
-                reader.SeekToLbaEx(0xF7C000 / 0x4000);
+                reader.Lba = 0xF7C000 / 0x4000;
             else if(!reader.HasSpare) // MMC NAND
                 reader.Seek(0x2FFC000, SeekOrigin.Begin);
             else // BigBlock NAND
-                reader.SeekToLbaEx(0x3BE0000 / 0x4000);
+                reader.Lba = 0x3BE0000 / 0x4000;
             var data = reader.ReadBytes(0x400);
             try {
                 var cfg = new SmcConfig();
@@ -89,7 +89,7 @@
         public Bootloader[] GetBootLoaders(NANDReader reader, bool readToMemory = false) {
             var bls = new List<Bootloader>();
             //reader.Seek(0x8000, SeekOrigin.Begin);
-            reader.SeekToLbaEx(2); // Seek to offset 0x8000, where the start of the bootloaders
+            reader.Lba = 2; // Seek to offset 0x8000, where the start of the bootloaders
             bls.Add(new Bootloader(reader, readitin: readToMemory));
             try {
                 for(var i = 1; i < 4; i++)
@@ -104,7 +104,7 @@
                 var size = BitOperations.Swap(BitConverter.ToUInt32(reader.ReadBytes(4), 0));
                 reader.Seek(0x64, SeekOrigin.Begin);
                 var offset = BitOperations.Swap(BitConverter.ToUInt32(reader.ReadBytes(4), 0));
-                reader.SeekToLbaEx(offset / 0x4000);
+                reader.Lba = offset / 0x4000;
                 if(offset % 0x4000 > 0)
                     reader.Seek(offset % 0x4000, SeekOrigin.Current);
                 //reader.Seek(offset, SeekOrigin.Begin);
@@ -112,7 +112,7 @@
                 bls.Add(new Bootloader(reader, readitin: readToMemory));
                 try {
                     if(size == 0) {
-                        reader.SeekToLbaEx((offset + 0x10000) / 0x4000);
+                        reader.Lba = (offset + 0x10000) / 0x4000;
                         if((offset + 0x10000) % 0x4000 > 0)
                             reader.Seek((offset + 0x10000) % 0x4000, SeekOrigin.Current);
                         //reader.Seek(offset + 0x10000, SeekOrigin.Begin);
@@ -124,7 +124,7 @@
                     if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataInvalid)
                         throw;
                     if(size == 0) {
-                        reader.SeekToLbaEx((offset + 0x20000) / 0x4000);
+                        reader.Lba = (offset + 0x20000) / 0x4000;
                         if((offset + 0x20000) % 0x4000 > 0)
                             reader.Seek((offset + 0x20000) % 0x4000, SeekOrigin.Current);
                         //reader.Seek(offset + 0x20000, SeekOrigin.Begin);
@@ -141,7 +141,7 @@
         }
 
         public string GetVirtualFuses(NANDReader reader) {
-            reader.SeekToLbaEx(0x95000 / 0x4000);
+            reader.Lba = 0x95000 / 0x4000;
             reader.Seek(0x95000 % 0x4000, SeekOrigin.Current);
             //reader.Seek(0x95000, SeekOrigin.Begin);
             var data = reader.ReadBytes(0x60);
@@ -161,7 +161,7 @@
 
         private static bool GetByteKey(NANDReader reader, int offset, out byte[] key) {
             Debug.SendDebug("Grabbing Byte Key @ 0x{0:X}", offset);
-            reader.SeekToLbaEx((uint)(offset / 0x4000));
+            reader.Lba = (uint)(offset / 0x4000);
             if(offset % 0x4000 > 0)
                 reader.Seek(offset % 0x4000, SeekOrigin.Current);
             //reader.Seek(offset, SeekOrigin.Begin);
@@ -179,8 +179,8 @@
         private static bool GetAsciiKey(NANDReader reader, int offset, out string key) {
             Debug.SendDebug("Grabbing ASCII Key @ 0x{0:X}", offset);
             key = null;
-            reader.SeekToLbaEx((uint)(offset / 0x4000));
-            if (offset % 0x4000 > 0)
+            reader.Lba = (uint)(offset / 0x4000);
+            if(offset % 0x4000 > 0)
                 reader.Seek(offset % 0x4000, SeekOrigin.Current);
             //reader.Seek(offset, SeekOrigin.Begin);
             var tmp = reader.ReadBytes(0x10);
@@ -226,7 +226,7 @@
 
         public string GetLaunchIni(NANDReader reader) {
             if(reader.FsRoot == null)
-                reader.ScanForFsRootAndMobile();
+                reader.ScanForFsRootAndMobiles();
             var nandfs = new NANDFileSystem();
             var fs = nandfs.ParseFileSystem(ref reader);
             foreach(var fileSystemEntry in fs) {

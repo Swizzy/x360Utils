@@ -2,58 +2,16 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using x360Utils.Common;
+    using global::x360Utils.Common;
+    using global::x360Utils.NAND.x360Utils.NAND;
 
     public sealed class NANDReader: Stream {
-        public readonly List<FsRootEntry> FsRootEntries = new List<FsRootEntry>();
-        public readonly bool HasSpare;
-        public readonly NANDSpare.MetaType MetaType;
-        public readonly List<MobileEntry> MobileEntries = new List<MobileEntry>();
-        private readonly List<long> _badBlocks = new List<long>();
+        private readonly List<uint> _badBlocks = new List<uint>();
         private readonly BinaryReader _binaryReader;
         private readonly bool _doSendPosition;
-        private bool _forcedSb;
-
-        public NANDReader(string file, bool fastScan = false) {
-            Debug.SendDebug("Creating NANDReader for: {0}", file);
-            _binaryReader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
-            if(!VerifyMagic())
-                throw new Exception("Bad Magic");
-            if(Main.VerifyVerbosityLevel(1))
-                Main.SendInfo("\r\nChecking for spare... ");
-            HasSpare = CheckForSpare();
-            if(HasSpare) {
-                if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("Image has Spare...");
-                Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4200));
-                _doSendPosition = true;
-                if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("\r\nChecking for MetaType...");
-                MetaType = NANDSpare.DetectSpareType(this);
-                if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("\r\nMetaType: {0}\r\n", MetaType);
-                if(fastScan)
-                    return;
-                if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("Checking for bad blocks...");
-                try {
-                    FindBadBlocks();
-                }
-                catch(X360UtilsException ex) {
-                    if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.DataNotFound)
-                        throw;
-                }
-            }
-            else {
-                if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("Image does NOT have Spare...");
-                if(Main.VerifyVerbosityLevel(1))
-                    Main.SendInfo("\r\n");
-                Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4000));
-                _doSendPosition = true;
-                MetaType = NANDSpare.MetaType.MetaTypeNone;
-            }
-        }
+        private uint[] _badBlocks2;
+        private bool _badBlocksScanned, _badBlocksScanned2;
+        private uint _lba;
 
         #region Overrides of Stream
 
@@ -71,73 +29,154 @@
             }
         }
 
-        public override long Position { get { return !HasSpare ? _binaryReader.BaseStream.Position : (_binaryReader.BaseStream.Position / 0x210) * 0x200; } set { Seek(value, SeekOrigin.Begin); } }
+        public override long Position {
+            get {
+                var offset = _binaryReader.BaseStream.Position;
+                if(HasSpare)
+                    offset = (Lba * 0x4200) + CalculatePage(CalculateLbaOffset(offset)) + CalculatePageOffset(CalculateLbaOffset(offset));
+                return offset;
+            }
+            set { Seek(value, SeekOrigin.Begin); }
+        }
 
         public override void Flush() { throw new NotSupportedException(); }
 
         public override long Seek(long offset, SeekOrigin origin) {
-            offset = HasSpare ? ((offset / 0x200) * 0x210) + offset % 0x200 : offset;
             Debug.SendDebug("Old position: 0x{0:X}", _binaryReader.BaseStream.Position);
-            Debug.SendDebug("Seeking to offset: 0x{0:X} origin: {1}", offset, origin);
-            var ret = _binaryReader.BaseStream.Seek(offset, origin);
+            Debug.SendDebug("Seeking to offset: 0x{0:X} (LBA: {1}) origin: {2}", offset, CalculateLba(offset), origin);
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone) {
+                RawSeek(offset, origin);
+                Lba = CalculateLba(RawPosition);
+            }
+            else {
+                switch(origin) {
+                    case SeekOrigin.Current:
+                        Lba = CalculateLba(offset) + Lba;
+                        offset += CalculateLbaOffset(Position);
+                        SeekToSmallBlockLba(Lba);
+                        if(CalculateLbaOffset(offset) > 0)
+                            SeekToLbaOffset(CalculateLbaOffset(offset));
+                        break;
+                    case SeekOrigin.Begin:
+                        Lba = CalculateLba(offset);
+                        SeekToSmallBlockLba(CalculateLba(offset));
+                        if(CalculateLbaOffset(offset) > 0)
+                            SeekToLbaOffset(CalculateLbaOffset(offset));
+                        break;
+                    case SeekOrigin.End:
+                        Lba = CalculateLba(offset);
+                        SeekToSmallBlockLba(LastBlock() - CalculateLba(offset));
+                        if(CalculateLbaOffset(offset) > 0)
+                            SeekToLbaOffset(CalculateLbaOffset(offset) * -1);
+                        break;
+                }
+            }
             Debug.SendDebug("New position: 0x{0:X}", _binaryReader.BaseStream.Position);
             if(_doSendPosition)
                 Main.SendReaderBlock(Position);
-            return ret;
+            return Position;
         }
 
         public override void SetLength(long value) { throw new NotSupportedException(); }
 
         public override int Read(byte[] buffer, int index, int count) {
+            var retval = count;
             Debug.SendDebug("Reading @ offset: 0x{0:X}", _binaryReader.BaseStream.Position);
-            Lba = (uint)((Position + count) / 0x4000);
-            if(!HasSpare) {
-                if(_doSendPosition)
-                    Main.SendReaderBlock(Position + count);
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone)
                 return _binaryReader.Read(buffer, index, count);
+            var pos = RawPosition % 0x4200; // Get Block position
+            var page = pos / 0x210; // Get current page in the block
+            pos = pos % 0x210; // Get current position in the current page
+            if(pos > 0) {
+                var size = BitOperations.GetSmallest(0x200 - pos, count);
+                var ret = _binaryReader.Read(buffer, index, (int)size);
+                page++;
+                if(page == 32)
+                    Lba++;
+                if(size <= count)
+                    return ret;
+                index += ret;
+                count -= ret;
             }
-            if(_doSendPosition)
-                Main.SendReaderBlock(Position + count);
-            var pos = (int)_binaryReader.BaseStream.Position % 0x210;
-            int size;
-            if(pos != 0) {
-                size = BitOperations.GetSmallest((0x200 - pos), count);
-                pos = _binaryReader.Read(buffer, index, size);
-                if(size == count)
-                    return pos;
+            while(count > 0) {
+                var size = BitOperations.GetSmallest(0x200 - pos, count);
+                var ret = _binaryReader.Read(buffer, index, (int)size);
+                page++;
+                if(page == 32) {
+                    Lba++;
+                    page = 0;
+                }
+                index += ret;
+                count -= ret;
             }
-            while(pos < count) {
-                size = BitOperations.GetSmallest(count - pos, 0x200);
-                pos += _binaryReader.Read(buffer, pos + index, size);
-                Seek(0x10, SeekOrigin.Current);
-            }
-            return pos;
+            return retval;
         }
 
-        public new byte ReadByte() {
-            if(HasSpare && _binaryReader.BaseStream.Position % 0x210 != 0)
-                RawSeek(0x10, SeekOrigin.Current);
-            if(_doSendPosition)
-                Main.SendReaderBlock(Position + 1);
-            Lba = (uint)((Position + 1) / 0x4000);
-            return _binaryReader.ReadByte();
-        }
-
-        public byte[] ReadBytes(int count) {
-            var buffer = new byte[count];
-            Read(buffer, 0, count);
-            return buffer;
+        public override int ReadByte() {
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone)
+                return _binaryReader.ReadByte();
+            var ret = new byte[1];
+            Read(ret, 0, 1);
+            return ret[0];
         }
 
         public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
 
         public override void WriteByte(byte value) { throw new NotSupportedException(); }
 
-        public new void Close() { _binaryReader.Close(); }
+        public override void Close() { _binaryReader.Close(); }
 
         #endregion Overrides of Stream
 
-        public uint Lba { get; private set; }
+        public NANDReader(string file, bool fastScan = false) {
+            if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                Main.SendInfo("Creating SmartNANDReader for {0}{1}", file, Environment.NewLine);
+            _binaryReader = new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
+            if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                Main.SendInfo("Verifying Magic Bytes... ");
+            if(!VerifyMagic()) {
+                if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                    Main.SendInfo("Failed!{0}", Environment.NewLine);
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.BadMagic);
+            }
+            if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                Main.SendInfo("OK!{0}", Environment.NewLine);
+            if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                Main.SendInfo("Checking for spare... ");
+            HasSpare = CheckForSpare();
+            if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                Main.SendInfo(HasSpare ? "Spare detected!{0}" : "No Spare detected!{0}", Environment.NewLine);
+            if(HasSpare) {
+                Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4200));
+                _doSendPosition = true;
+                if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                    Main.SendInfo("Detecting spare type... ");
+                MetaType = NANDSpare.DetectSpareType(this);
+                if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                    Main.SendInfo("{0}{1}", MetaType, Environment.NewLine);
+                if(fastScan)
+                    return;
+                if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                    Main.SendInfo("Scanning for FSRoot/Mobile entries");
+                ScanForFsRootAndMobiles();
+                return;
+            }
+            Main.SendMaxBlocksChanged((int)(_binaryReader.BaseStream.Length / 0x4000));
+            _doSendPosition = true;
+            MetaType = NANDSpare.MetaType.MetaTypeNone;
+        }
+
+        #region Properties
+
+        public MobileEntry[] MobileEntries { get; private set; }
+
+        public FsRootEntry[] FileSystemEntries { get; private set; }
+
+        public bool HasSpare { get; private set; }
+
+        public NANDSpare.MetaType MetaType { get; private set; }
+
+        public uint Lba { get { return _lba; } set { SeekToSmallBlockLba(value); } }
 
         public FsRootEntry FsRoot { get; private set; }
 
@@ -145,78 +184,9 @@
 
         public long RawPosition { get { return _binaryReader.BaseStream.Position; } set { RawSeek(value, SeekOrigin.Begin); } }
 
-        public MobileEntry[] MobileArray { get; private set; }
+        #endregion
 
-        public void SeekToLbaEx(uint lba) {
-            Lba = lba;
-            if(_badBlocks.Contains(lba)) {
-                var block = MetaType == NANDSpare.MetaType.MetaType2 ? 0xFFF : 0x3FF;
-                while(true) {
-                    NANDSpare.MetaData meta;
-                    switch(MetaType) {
-                        case NANDSpare.MetaType.MetaType0:
-                        case NANDSpare.MetaType.MetaType1:
-                            Seek(block * 0x4000, SeekOrigin.Begin);
-                            RawSeek(0x200, SeekOrigin.Current);
-                            meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
-                            if(NANDSpare.GetLba(ref meta) == lba) {
-                                Seek(block * 0x4000, SeekOrigin.Begin);
-                                return;
-                            }
-                            break;
-                        case NANDSpare.MetaType.MetaType2:
-                            Seek(block * 0x4000, SeekOrigin.Begin);
-                            RawSeek(0x200, SeekOrigin.Current);
-                            meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
-                            if(NANDSpare.GetLba(ref meta) == lba / 8) {
-                                Seek(block * 0x4000 + ((lba % 8) * 0x4000), SeekOrigin.Begin);
-                                return;
-                            }
-                            break;
-                        default:
-                            Seek(lba * 0x4000, SeekOrigin.Begin);
-                            return;
-                    }
-                    block--;
-                }
-            }
-            Seek(MetaType == NANDSpare.MetaType.MetaType2 ? ((lba / 8) * 0x20000) + ((lba % 8) * 0x4000) : lba * 0x4000, SeekOrigin.Begin);
-        }
-
-        public void SeekToLba(uint lba) {
-            if(_badBlocks.Contains(lba)) {
-                var block = 0;
-                while(true) {
-                    NANDSpare.MetaData meta;
-                    switch(MetaType) {
-                        case NANDSpare.MetaType.MetaType0:
-                        case NANDSpare.MetaType.MetaType1:
-                            Seek((lba * 0x4000) - block * 0x4000, SeekOrigin.Begin);
-                            RawSeek(0x200, SeekOrigin.Current);
-                            meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
-                            if(NANDSpare.GetLba(ref meta) == lba) {
-                                Seek((lba * 0x4000) - block * 0x4000, SeekOrigin.Begin);
-                                return;
-                            }
-                            break;
-                        case NANDSpare.MetaType.MetaType2:
-                            Seek((lba * 0x20000) - block * 0x20000, SeekOrigin.Begin);
-                            RawSeek(0x200, SeekOrigin.Current);
-                            meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
-                            if(NANDSpare.GetLba(ref meta) == lba) {
-                                Seek((lba * 0x20000) - block * 0x20000, SeekOrigin.Begin);
-                                return;
-                            }
-                            break;
-                        default:
-                            Seek(lba * 0x4000, SeekOrigin.Begin);
-                            return;
-                    }
-                    block++;
-                }
-            }
-            Seek(lba * (MetaType != NANDSpare.MetaType.MetaType2 ? 0x4000 : 0x20000), SeekOrigin.Begin);
-        }
+        #region Private functions
 
         private bool CheckForSpare() {
             RawSeek(0, SeekOrigin.Begin);
@@ -231,14 +201,14 @@
         }
 
         private bool VerifyMagic() {
-            if(Main.VerifyVerbosityLevel(1))
+            if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
                 Main.SendInfo("\r\nChecking Magic bytes... ");
             RawSeek(0, SeekOrigin.Begin);
             var tmp = _binaryReader.ReadBytes(2);
             Debug.SendDebug("Restoring position...");
             RawSeek(0, SeekOrigin.Begin);
             var ret = (tmp[0] == 0xFF && tmp[1] == 0x4F);
-            if(Main.VerifyVerbosityLevel(1)) {
+            if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug)) {
                 if(ret)
                     Main.SendInfo("OK!");
                 else
@@ -247,112 +217,37 @@
             return ret;
         }
 
-        public void ScanForFsRootAndMobile() {
-            if(FsRootEntries.Count > 0)
+        private void ScanForBadBlocks(bool throwException = true, uint blocksize = 0x4000, uint nextBlock = 0x41F0) {
+            if(!HasSpare || MetaType == NANDSpare.MetaType.MetaTypeUnInitialized) {
+                if(throwException)
+                    throw new NotSupportedException();
                 return;
-            if(!HasSpare) {
-                #region MMC (No Spare)
-
-                if(Length < 0x2FF0000)
-                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
-                Seek(0x2FE8018, SeekOrigin.Begin); // Seek to MMC Anchor number offset
-                var ver1 = BitOperations.Swap(BitConverter.ToUInt32(ReadBytes(4), 0));
-                Seek(0x2FEC018, SeekOrigin.Begin); // Seek to MMC Anchor number offset
-                var ver2 = BitOperations.Swap(BitConverter.ToUInt32(ReadBytes(4), 0));
-                if(ver1 == 0 || ver2 == 0)
-                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
-                Seek(ver1 > ver2 ? 0x2FE8000 : 0x2FEC000, SeekOrigin.Begin); // Seek to MMC Anchor Block Offset
-                var buf = ReadBytes(0x4000); // We want the first anchor buffer
-                FsRootEntries.Add(new FsRootEntry(NANDSpare.GetMmcMobileBlock(ref buf, 0) * 0x4000, 0, true));
-                for(byte i = 0x31; i < 0x3F; i++) {
-                    var size = NANDSpare.GetMmcMobileSize(ref buf, i);
-                    MobileEntries.Add(new MobileEntry(NANDSpare.GetMmcMobileBlock(ref buf, i) * 0x4000, 0, size > 0 ? size : 0x4000, i));
-                }
-
-                #endregion
             }
-            else {
-                #region NAND (With Spare)
-
-                var maximumOffset = BitOperations.GetSmallest(_binaryReader.BaseStream.Length, 0x4200000); // Only read the filesystem area of BB NANDs (for faster processing)
-
-                #region FSRoot
-
-                RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
-                for(; _binaryReader.BaseStream.Position < maximumOffset - 0x10;) {
-                    var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
-                    if(NANDSpare.PageIsFsRoot(ref meta)) {
-                        Debug.SendDebug("FSRoot found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
-                        FsRootEntries.Add(new FsRootEntry(Position - 0x200, NANDSpare.GetFsSequence(ref meta)));
-                        RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
-                    }
-                    else {
-                        if(NANDSpare.IsMobilePage(ref meta)) {
-                            Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
-                            MobileEntries.Add(new MobileEntry(Position - 0x200, ref meta));
-                        }
-                        for(var i = 0; i < 31; i++) {
-                            RawSeek(0x200, SeekOrigin.Current);
-                            meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
-                            if(NANDSpare.IsMobilePage(ref meta)) {
-                                Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsFreePages(ref meta));
-                                MobileEntries.Add(new MobileEntry(Position - 0x200, ref meta));
-                            }
-                        }
-                        RawSeek(0x200, SeekOrigin.Current);
-                    }
+            _badBlocks.Clear();
+            RawSeek(0x200, SeekOrigin.Begin); // Seek to first page spare data...
+            var tBlocks = Length / blocksize;
+            for(uint block = 0; block < tBlocks; block++) {
+                var meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
+                if(NANDSpare.CheckIsBadBlock(meta)) {
+                    _badBlocks.Add(block);
+                    if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.High))
+                        Main.SendInfo("{1}BadBlock Marker detected @ block 0x{0:X}", block, Environment.NewLine);
                 }
-
-                #endregion
-
-                #region Mobile*.dat
-
-                RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
-                for(; _binaryReader.BaseStream.Position < maximumOffset - 0x10;) {
-                    var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
-                    if(NANDSpare.PageIsFsRoot(ref meta)) {
-                        RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
-                        continue; // Skip this one
-                    }
-
-                    if(NANDSpare.IsMobilePage(ref meta)) {
-                        Debug.SendDebug("Mobile found @ 0x{0:X} version: {1}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
-                        MobileEntries.Add(new MobileEntry(Position - 0x200, ref meta));
-                        var size = NANDSpare.GetFsSize(ref meta);
-                        RawSeek(size / 0x200 * 0x210 - 0x10, SeekOrigin.Current);
-                        if(size % 0x200 > 0) // There's data still to be saved...
-                            RawSeek(0x210, SeekOrigin.Current); // Seek 1 page
-                        while(Position % 0x800 > 0) // We want to have an even 4 pages!
-                            RawSeek(0x210, SeekOrigin.Current); // Seek 1 page
-                    }
-                    else
-                        RawSeek(0x830, SeekOrigin.Current); // Skip 4 pages
-                }
-
-                #endregion
-
-                #endregion
+                RawSeek(nextBlock, SeekOrigin.Current);
             }
-            RawSeek(0, SeekOrigin.Begin); //Reset the stream
-
-            if(FsRootEntries.Count <= 0)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
-            FindLatestFsRoot();
-            FillMobileArray();
+            _badBlocksScanned = true;
         }
 
         private void FindLatestFsRoot() {
-            foreach(var fsRootEntry in FsRootEntries) {
-                if(FsRoot == null)
-                    FsRoot = fsRootEntry;
-                else if(fsRootEntry.Version >= FsRoot.Version)
+            foreach(var fsRootEntry in FileSystemEntries) {
+                if(FsRoot == null || fsRootEntry.Version >= FsRoot.Version)
                     FsRoot = fsRootEntry;
             }
         }
 
-        private void FillMobileArray() {
+        private void FindLatestMobiles(IEnumerable<MobileEntry> mobiles) {
             var list = new List<MobileEntry>();
-            foreach(var mobileEntry in MobileEntries) {
+            foreach(var mobileEntry in mobiles) {
                 if(list.Count > 0) {
                     for(var i = 0; i < list.Count; i++) {
                         if(mobileEntry.MobileType != list[i].MobileType || mobileEntry.Version < list[i].Version)
@@ -375,40 +270,187 @@
                 else
                     list.Add(mobileEntry);
             }
-            MobileArray = list.ToArray();
+            MobileEntries = list.ToArray();
             list.Clear();
-            foreach(var mobileEntry in MobileArray) {
+            foreach(var mobileEntry in MobileEntries) {
                 if(mobileEntry.Offset != 0)
                     list.Add(mobileEntry);
             }
-            MobileArray = list.ToArray();
+            MobileEntries = list.ToArray();
         }
 
-        public long[] FindBadBlocks(bool forceSb = false) {
-            if(!HasSpare || MetaType == NANDSpare.MetaType.MetaTypeUnInitialized)
-                throw new NotSupportedException();
-            if(_forcedSb && !forceSb || !_forcedSb && forceSb)
-                _badBlocks.Clear();
-            if(_badBlocks.Count > 0)
-                return _badBlocks.ToArray();
-            _forcedSb = forceSb;
-            _badBlocks.Clear();
-            RawSeek(0x200, SeekOrigin.Begin); // Seek to first page spare data...
-            var totalBlocks = Length / (MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSb ? 0x20000 : 0x4000) : 0x4000);
-            for(var block = 0; block < totalBlocks; block++) {
-                var spare = RawReadBytes(0x10);
-                if(NANDSpare.CheckIsBadBlockSpare(ref spare, MetaType)) {
-                    if(Main.VerifyVerbosityLevel(1))
-                        Main.SendInfo("{1}BadBlock Marker detected @ block 0x{0:X}", block, Environment.NewLine);
-                    _badBlocks.Add(block);
-                }
-                RawSeek(MetaType == NANDSpare.MetaType.MetaType2 ? (!forceSb ? 0x20FF0 : 0x41F0) : 0x41F0, SeekOrigin.Current);
+        private uint CalculateLba(long offset) { return (uint)(offset / 0x4000); }
+
+        private uint CalculateLbaOffset(long offset) { return (uint)(offset % 0x4000); }
+
+        private long CalculatePage(long pageOffset) { return (pageOffset / 0x200) * 0x210; }
+
+        private long CalculatePageOffset(long pageOffset) { return pageOffset % 0x200; }
+
+        private uint LastBlock() { return (uint)(MetaType == NANDSpare.MetaType.MetaType2 ? 0xFFF : 0x3FF); }
+
+        private void SeekToSmallBlockLba(uint blockLba) {
+            _lba = blockLba;
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone) {
+                RawSeek(blockLba * 0x4000, SeekOrigin.Begin);
+                return;
             }
-            if(Main.VerifyVerbosityLevel(1))
-                Main.SendInfo(Environment.NewLine);
-            if(_badBlocks.Count > 0)
+            if(MetaType == NANDSpare.MetaType.MetaTypeUnInitialized) {
+                RawSeek(blockLba * 0x4200, SeekOrigin.Begin);
+                return;
+            }
+            RawSeek(0x200 + (blockLba * 0x4200), SeekOrigin.Begin); // Seek to the first page spare of the block we're looking for
+            var meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
+            switch(MetaType) {
+                case NANDSpare.MetaType.MetaType2:
+                    if(NANDSpare.GetLba(ref meta) == blockLba / 8) {
+                        RawSeek(blockLba * 0x4200, SeekOrigin.Begin);
+                        return;
+                    }
+                    break;
+                default:
+                    if(NANDSpare.GetLba(ref meta) == blockLba) {
+                        RawSeek(blockLba * 0x4200, SeekOrigin.Begin);
+                        return;
+                    }
+                    break;
+            }
+
+            #region Find the block starting from the end...
+
+            var block = LastBlock();
+            while(true) {
+                RawSeek(0x200 + (block * 0x4200), SeekOrigin.Begin);
+                meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
+                switch(MetaType) {
+                    case NANDSpare.MetaType.MetaType2:
+                        if(NANDSpare.GetLba(ref meta) == blockLba / 8) {
+                            RawSeek(block * 0x4200, SeekOrigin.Begin);
+                            return;
+                        }
+                        break;
+                    default:
+                        if(NANDSpare.GetLba(ref meta) == blockLba) {
+                            RawSeek(block * 0x4200, SeekOrigin.Begin);
+                            return;
+                        }
+                        break;
+                }
+                block--;
+            }
+
+            #endregion
+        }
+
+        private void SeekToLbaOffset(long lbaOffset) {
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone)
+                RawSeek(lbaOffset, SeekOrigin.Current);
+            else
+                RawSeek(CalculatePage(lbaOffset) + CalculatePageOffset(lbaOffset), SeekOrigin.Current);
+        }
+
+        #endregion
+
+        internal void ScanForFsRootAndMobiles() {
+            if(FsRoot != null)
+                return;
+            var mobiles = new List<MobileEntry>();
+            var fsroots = new List<FsRootEntry>();
+            if(!HasSpare) {
+                #region MMC
+
+                if(Length < 0x2FF0000)
+                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataTooSmall);
+                Seek(0x2FE8018, SeekOrigin.Begin); // Seek to MMC Anchor number offset
+                var ver1 = BitOperations.Swap(BitConverter.ToUInt32(ReadBytes(4), 0));
+                Seek(0x2FEC018, SeekOrigin.Begin); // Seek to MMC Anchor number offset
+                var ver2 = BitOperations.Swap(BitConverter.ToUInt32(ReadBytes(4), 0));
+                if(ver1 == 0 || ver2 == 0)
+                    throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+                Seek(ver1 > ver2 ? 0x2FE8000 : 0x2FEC000, SeekOrigin.Begin); // Seek to MMC Anchor Block Offset
+                var buf = ReadBytes(0x4000); // We want the first anchor buffer
+                fsroots.Add(new FsRootEntry(NANDSpare.GetMmcMobileBlock(ref buf, 0) * 0x4000, 0, true));
+                for(byte i = 0x31; i < 0x3F; i++) {
+                    var size = NANDSpare.GetMmcMobileSize(ref buf, i);
+                    mobiles.Add(new MobileEntry(NANDSpare.GetMmcMobileBlock(ref buf, i) * 0x4000, 0, size > 0 ? size : 0x4000, i));
+                }
+
+                #endregion
+            }
+            else {
+                #region NAND
+
+                var maximumOffset = BitOperations.GetSmallest(_binaryReader.BaseStream.Length, 0x4200000); // Only read the filesystem area of BB NANDs (for faster processing)
+                RawSeek(0x8600, SeekOrigin.Begin); // Seek to Page 0 on Block 3 (SB) Nothing before this will be valid FSRoot...
+                for(; RawPosition < maximumOffset - 0x10;) {
+                    var meta = NANDSpare.GetMetaData(RawReadBytes(0x10), MetaType);
+                    if(!NANDSpare.PageIsFsRoot(ref meta))
+                        continue;
+                    if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                        Main.SendInfo("FSRoot found @ 0x{0:X} Version: {1}{2}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
+                    fsroots.Add(new FsRootEntry(Position - 0x200, NANDSpare.GetFsSequence(ref meta)));
+                }
+
+                #region Mobile
+
+                RawSeek(0x8600, SeekOrigin.Begin); //Seek to block 3 page 0 on small block
+                for(; _binaryReader.BaseStream.Position < maximumOffset - 0x10;) {
+                    var meta = NANDSpare.GetMetaData(_binaryReader.ReadBytes(0x10), MetaType);
+                    if(NANDSpare.PageIsFsRoot(ref meta)) {
+                        RawSeek(0x41f0, SeekOrigin.Current); // Seek to the next small block
+                        continue; // Skip this one
+                    }
+
+                    if(NANDSpare.IsMobilePage(ref meta)) {
+                        if(Main.VerifyVerbosityLevel(Main.VerbosityLevels.Debug))
+                            Main.SendInfo("Mobile found @ 0x{0:X} Version: {1}{2}", Position - 0x200, NANDSpare.GetFsSequence(ref meta));
+                        mobiles.Add(new MobileEntry(Position - 0x200, ref meta));
+                        var size = NANDSpare.GetFsSize(ref meta);
+                        RawSeek(size / 0x200 * 0x210 - 0x10, SeekOrigin.Current);
+                        if(size % 0x200 > 0) // There's data still to be saved...
+                            RawSeek(0x210, SeekOrigin.Current); // Seek 1 page
+                        while(Position % 0x800 > 0) // We want to have an even 4 pages!
+                            RawSeek(0x210, SeekOrigin.Current); // Seek 1 page
+                    }
+                    else
+                        RawSeek(0x830, SeekOrigin.Current); // Skip 4 pages
+                }
+
+                #endregion
+
+                #endregion
+            }
+            FileSystemEntries = fsroots.ToArray();
+            FindLatestFsRoot();
+            FindLatestMobiles(mobiles);
+        }
+
+        public byte[] ReadBytes(int count) {
+            if(MetaType == NANDSpare.MetaType.MetaTypeNone)
+                return _binaryReader.ReadBytes(count);
+            var buffer = new byte[count];
+            Read(buffer, 0, count);
+            return buffer;
+        }
+
+        public uint[] GetBadBlocks(bool smallBlocks = true) {
+            if(smallBlocks && _badBlocksScanned)
                 return _badBlocks.ToArray();
-            throw new X360UtilsException(X360UtilsException.X360UtilsErrors.DataNotFound);
+            if(smallBlocks || MetaType != NANDSpare.MetaType.MetaType2) {
+                ScanForBadBlocks();
+                return _badBlocks.ToArray();
+            }
+            if(_badBlocks2.Length > 0 && _badBlocksScanned2)
+                return _badBlocks2;
+            if(!_badBlocksScanned)
+                ScanForBadBlocks();
+            var tmp = _badBlocks.ToArray();
+            ScanForBadBlocks(true, 0x20000, 0x20ff0);
+            _badBlocksScanned2 = true;
+            _badBlocks2 = _badBlocks.ToArray();
+            _badBlocks.Clear();
+            _badBlocks.AddRange(tmp);
+            return _badBlocks2;
         }
 
         public long RawSeek(long offset, SeekOrigin origin) {
@@ -433,63 +475,6 @@
             if(_doSendPosition)
                 Main.SendReaderBlock(Position + ((count / 0x210) * 0x200));
             return _binaryReader.Read(buffer, index, count);
-        }
-    }
-
-    public class FsRootEntry {
-        public readonly long Offset;
-        public readonly long Version;
-        private readonly long _rawOffset;
-
-        public FsRootEntry(long offset, long version, bool isMmc = false) {
-            Offset = offset;
-            _rawOffset = !isMmc ? (offset / 0x200) * 0x210 : offset;
-            Version = version;
-        }
-
-        public override string ToString() {
-            return _rawOffset != Offset ? string.Format("FSRootEntry @ 0x{0:X} (0x{1:X}) Version: {2}", Offset, _rawOffset, Version) : string.Format("FSRootEntry @ 0x{0:X}", Offset);
-        }
-
-        public byte[] GetBlock(ref NANDReader reader) {
-            reader.Seek(Offset, SeekOrigin.Begin);
-            return reader.ReadBytes(0x4000);
-        }
-    }
-
-    public class MobileEntry {
-        public readonly byte MobileType;
-        public readonly long Offset;
-        public readonly int Size;
-        public readonly long Version;
-        private readonly long _rawOffset;
-
-        internal MobileEntry(long offset, ref NANDSpare.MetaData meta) {
-            Offset = offset;
-            _rawOffset = (offset / 0x200) * 0x210;
-            Version = NANDSpare.GetFsSequence(ref meta);
-            MobileType = NANDSpare.GetBlockType(ref meta);
-            Size = NANDSpare.GetFsSize(ref meta);
-        }
-
-        internal MobileEntry(long offset, long version, int size, byte mobileType) {
-            Offset = offset;
-            _rawOffset = offset;
-            Version = version;
-            MobileType = mobileType;
-            Size = size;
-        }
-
-        public override string ToString() {
-            return _rawOffset != Offset
-                       ? string.Format("MobileEntry @ 0x{0:X} (0x{1:X} [0x{2:X}]) Version: {3} Type: 0x{4:X} (Mobile{5}.dat) Size: 0x{6:X}", Offset, _rawOffset, _rawOffset + 0x200, Version, MobileType,
-                                       Convert.ToChar(MobileType + 0x11), Size)
-                       : string.Format("MobileEntry @ 0x{0:X} Version: {1} Type: 0x{2:X} (Mobile{3}.dat) Size: 0x{4:X}", Offset, Version, MobileType, Convert.ToChar(MobileType + 0x11), Size);
-        }
-
-        public byte[] GetData(ref NANDReader reader) {
-            reader.Seek(Offset, SeekOrigin.Begin);
-            return reader.ReadBytes(Size);
         }
     }
 }

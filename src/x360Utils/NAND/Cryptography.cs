@@ -3,7 +3,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Security.Cryptography;
-    using x360Utils.Common;
+    using global::x360Utils.Common;
 
     public sealed class Cryptography {
         #region BLEncryptionTypes enum

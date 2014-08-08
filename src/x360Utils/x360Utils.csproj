@@ -65,11 +65,12 @@
     <Compile Include="CPUKey\CpukeyUtils.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="NAND\Bootloader.cs" />
-    <Compile Include="NAND\SmartNANDReader.cs" />
+    <Compile Include="NAND\FsRootEntry.cs" />
+    <Compile Include="NAND\MobileEntry.cs" />
+    <Compile Include="NAND\NANDReader.cs" />
     <Compile Include="NAND\Cryptography.cs" />
     <Compile Include="NAND\Keyvault.cs" />
     <Compile Include="NAND\NANDFileSystem.cs" />
-    <Compile Include="NAND\NANDReader.cs" />
     <Compile Include="NAND\NANDSpare.cs" />
     <Compile Include="NAND\SMC.cs" />
     <Compile Include="NAND\SMCConfig.cs" />
@@ -98,7 +99,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties BuildVersion_UpdateFileVersion="True" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_BuildVersioningStyle="None.None.Increment.None" />
+      <UserProperties BuildVersion_BuildVersioningStyle="None.None.Increment.None" BuildVersion_UpdateAssemblyVersion="True" BuildVersion_UpdateFileVersion="True" />
     </VisualStudio>
   </ProjectExtensions>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

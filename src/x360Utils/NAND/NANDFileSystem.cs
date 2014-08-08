@@ -3,7 +3,8 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
-    using x360Utils.Common;
+    using global::x360Utils.Common;
+    using global::x360Utils.NAND.x360Utils.NAND;
 
     public class NANDFileSystem {
         private static long GetBaseBlockForMeta2(ref NANDReader reader) {
@@ -89,7 +90,7 @@
                 var left = (int)Size;
                 var baseBlock = reader.MetaType != NANDSpare.MetaType.MetaType2 ? 0 : GetBaseBlockForMeta2(ref reader);
                 foreach(var offset in Blocks) {
-                    reader.SeekToLbaEx((ushort)(baseBlock + offset));
+                    reader.Lba = (ushort)(baseBlock + offset);
                     ret.AddRange(reader.ReadBytes(BitOperations.GetSmallest(left, 0x4000)));
                     left -= BitOperations.GetSmallest(left, 0x4000);
                 }
@@ -101,7 +102,7 @@
                     var left = (int)Size;
                     var baseBlock = reader.MetaType != NANDSpare.MetaType.MetaType2 ? 0 : GetBaseBlockForMeta2(ref reader);
                     foreach(var offset in Blocks) {
-                        reader.SeekToLbaEx((ushort)(baseBlock + offset));
+                        reader.Lba = (ushort)(baseBlock + offset);
                         writer.Write(reader.ReadBytes(BitOperations.GetSmallest(left, 0x4000)));
                         left -= BitOperations.GetSmallest(left, 0x4000);
                     }
