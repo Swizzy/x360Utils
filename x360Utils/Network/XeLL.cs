@@ -42,7 +42,7 @@
                         throw new TimeoutException(string.Format("Ping Timeout for {0}", ipadrAddress));
                     FuseDownloader(ipadrAddress);
                     var keyutils = new CpukeyUtils();
-                    return keyutils.GetCPUKeyFromTextFile("FUSE.txt");
+                    return keyutils.GetCpuKeyFromTextFile("FUSE.txt");
                 default:
                     throw new NotSupportedException("IP Must be IPv4!");
             }

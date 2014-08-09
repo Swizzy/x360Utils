@@ -4,14 +4,15 @@
     using System.Globalization;
     using System.IO;
 
-    public sealed class FUSE {
+    public sealed class Fuse {
         public readonly UInt64[] FUSELines = new UInt64[12];
 
-        public FUSE(string fuseFile): this(File.ReadAllLines(fuseFile)) { }
+        public Fuse(string fuseFile): this(File.ReadAllLines(fuseFile)) { }
 
-        public FUSE(ICollection<string> fuseLines) {
+        public Fuse(ICollection<string> fuseLines) {
             if(fuseLines.Count < 12)
                 throw new ArgumentException("fuseLines must be 12 or more lines!");
+            var line = 0;
             foreach(var fuseLine in fuseLines) {
                 if(fuseLine.Length < 10)
                     continue;
@@ -19,9 +20,10 @@
                     continue;
                 int index;
                 if(!int.TryParse(fuseLine.Substring(8, 2), out index))
-                    throw new ArgumentException("Bad fuseset index!");
+                    throw new ArgumentException(string.Format("Bad fuseset index on line {0}", line));
                 if(!UInt64.TryParse(fuseLine.Substring(11), NumberStyles.HexNumber, null, out FUSELines[index]))
-                    throw new ArgumentException("Bad fuseset data!");
+                    throw new ArgumentException(string.Format("Bad fuseset data on line {0}", line));
+                line++;
             }
         }
 
@@ -37,7 +39,7 @@
                     return FUSELines[3].ToString("X16") + FUSELines[6].ToString("X16");
                 if(CheckKey(4, 6))
                     return FUSELines[4].ToString("X16") + FUSELines[6].ToString("X16");
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.NoValidKeyFound);
+                throw new CpuKeyException(CpuKeyException.ExceptionTypes.NoValidKeyFound);
             }
         }
 
@@ -98,20 +100,14 @@
                     CpukeyUtils.VerifyCpuKey(FUSELines[index0] | FUSELines[index1], FUSELines[index2] | FUSELines[index3]);
                     return true;
                 }
-                catch(X360UtilsException ex) {
-                    if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.InvalidKeyECD && ex.ErrorCode != X360UtilsException.X360UtilsErrors.InvalidKeyHamming)
-                        throw; // Dafuq?
-                }
+                catch(CpuKeyException) {}
             }
             else if(index0 >= 0 && index1 >= 0) {
                 try {
                     CpukeyUtils.VerifyCpuKey(FUSELines[index0], FUSELines[index1]);
                     return true;
                 }
-                catch(X360UtilsException ex) {
-                    if(ex.ErrorCode != X360UtilsException.X360UtilsErrors.InvalidKeyECD && ex.ErrorCode != X360UtilsException.X360UtilsErrors.InvalidKeyHamming)
-                        throw; // Dafuq?
-                }
+                catch(CpuKeyException) {}
             }
             else
                 throw new ArgumentOutOfRangeException();
