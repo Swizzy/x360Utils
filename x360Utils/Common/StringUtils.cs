@@ -44,7 +44,7 @@
 
         public static bool IsIPv4(string input) { return Regex.IsMatch(input, "^([0-9]{1,3}\\.){3}[0-9]{1,3}$"); }
 
-        public static string GetAciiString(ref byte[] data, int offset, int length, bool trim = false) {
+        public static string GetAciiString(byte[] data, int offset, int length, bool trim = false) {
             return trim ? Encoding.ASCII.GetString(data, offset, length).Trim() : Encoding.ASCII.GetString(data, offset, length);
         }
     }

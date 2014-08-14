@@ -1,5 +1,6 @@
 ﻿namespace x360Utils {
     using System;
+    using System.IO;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using x360Utils.Common;
@@ -48,13 +49,15 @@
 
         public static event EventHandler<EventArg<string>> InfoOutput;
 
-        public static event EventHandler<EventArg<int>> BlockInReader;
+        public static event EventHandler<EventArg<int, int>> BlockInReader;
 
-        public static event EventHandler<EventArg<int>> MaxBlocksChanged;
-
-        internal static bool VerifyVerbosityLevel(int level) { return level <= VerbosityLevel; }
-
-        internal static void SendInfo(string message, params object[] args) {
+        internal static void SendInfo(VerbosityLevels verbosity,string message, params object[] args) {
+            if(verbosity > (VerbosityLevels)VerbosityLevel)
+                return;
+            if(verbosity == VerbosityLevels.Debug || verbosity == VerbosityLevels.FullDebug) {
+                Debug.SendDebug(message, args);
+                return;
+            }
             var info = InfoOutput;
             if(info == null || message == null)
                 return;
@@ -62,22 +65,23 @@
             info(null, new EventArg<string>(message));
         }
 
-        internal static void SendReaderBlock(long offset) {
+        internal static void SendReaderBlock(long offset, int blocks) {
             var bir = BlockInReader;
             if(bir == null)
                 return;
             offset = offset - offset % 4000;
-            bir(null, new EventArg<int>((int)(offset / 0x4000)));
+            bir(null, new EventArg<int, int>((int)(offset / 0x4000), blocks));
         }
 
-        internal static void SendMaxBlocksChanged(int blocks) {
-            var mbc = MaxBlocksChanged;
-            if(mbc == null)
-                return;
-            mbc(null, new EventArg<int>(blocks));
-            SendReaderBlock(0);
+        public static byte[] GetEmbeddedResource(string name, bool addNameSpace = true) {
+            if(addNameSpace)
+                name = string.Format("{0}.{1}", typeof(Main).Namespace, name);
+            using(var stream = Assembly.GetAssembly(typeof(Main)).GetManifestResourceStream(name)) {
+                if (stream == null)
+                    throw new FileNotFoundException(name);
+                using(var br = new BinaryReader(stream))
+                    return br.ReadBytes((int)br.BaseStream.Length);
+            }
         }
-
-        public static bool VerifyVerbosityLevel(VerbosityLevels level) { return VerifyVerbosityLevel((int)level); }
     }
 }

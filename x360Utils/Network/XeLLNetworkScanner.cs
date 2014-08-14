@@ -24,7 +24,7 @@
             var basetest = _baseip.Split('.');
             if((basetest.Length == 4) || (basetest.Length == 3)) {
                 _baseip = string.Format("{0}.{1}.{2}.", basetest[0], basetest[1], basetest[2]);
-                Main.SendInfo("Scannning network for your console... Pinging full network for response...");
+                Main.SendInfo(Main.VerbosityLevels.Low, "Scannning network for your console... Pinging full network for response...");
                 var lastping = DateTime.Now;
                 for(var j = 0; j < 2; j++) {
                     for(var i = 0; i < 255; i++) {
@@ -45,10 +45,10 @@
                     if(_baseip.Equals(string.Format("{0}.{1}.{2}.", split[0], split[1], split[2])))
                         break;
                 }
-                Main.SendInfo("Scannning network for your console... Waiting for pings to complete...");
+                Main.SendInfo(Main.VerbosityLevels.Low, "Scannning network for your console... Waiting for pings to complete...");
                 while((DateTime.Now - lastping).TotalMilliseconds < 500)
                     Thread.Sleep(100);
-                Main.SendInfo("Scannning network for your console... Looking for console response based on MAC Address...");
+                Main.SendInfo(Main.VerbosityLevels.Low, "Scannning network for your console... Looking for console response based on MAC Address...");
                 var proc = new Process {
                                            StartInfo = {
                                                            FileName = "arp",
@@ -93,7 +93,7 @@
         private bool Failsaferesponse(IPAddress ip) {
             try {
                 XeLL.FuseDownloader(ip);
-                Main.SendInfo(string.Format("Success! Found console on {0}", ip));
+                Main.SendInfo(Main.VerbosityLevels.Low, "Success! Found console on {0}", ip);
                 XeLLIPAddress = ip;
                 return true;
             }
@@ -111,7 +111,7 @@
         }
 
         private bool Scanfailsafe() {
-            Main.SendInfo("Scannning network for your console... Trying failsafe...");
+            Main.SendInfo(Main.VerbosityLevels.Low, "Scannning network for your console... Trying failsafe...");
             var response = 0;
             foreach(var s in _responselist) {
                 var p = new Ping();
@@ -122,7 +122,7 @@
                 if(Failsaferesponse(s))
                     return true;
             }
-            Main.SendInfo(string.Format("Network scan FAILED! Got response from {0} of {1} during failsafe...", response, _responselist.Count));
+            Main.SendInfo(Main.VerbosityLevels.Low, "Network scan FAILED! Got response from {0} of {1} during failsafe...", response, _responselist.Count);
             return false;
         }
     }
