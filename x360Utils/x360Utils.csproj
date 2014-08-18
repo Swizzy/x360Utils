@@ -41,6 +41,7 @@
     <Compile Include="NAND\Fcrt.cs" />
     <Compile Include="NAND\Filesystem.cs" />
     <Compile Include="NAND\Keyvault.cs" />
+    <Compile Include="NAND\Smc.cs" />
     <Compile Include="NAND\SmcConfig.cs" />
     <Compile Include="RC4.cs" />
     <Compile Include="Common\Translators.cs" />

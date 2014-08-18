@@ -24,6 +24,8 @@
             return true;
         }
 
+        public static bool DataIsZero(byte[] data, int offset = 0, int length = -1) { return DataIsZero(ref data, offset, length); }
+
         public static int CountByteInstances(ref byte[] data, byte instance) {
             var count = 0;
             foreach(var b in data) {
@@ -81,13 +83,8 @@
             return true;
         }
 
-        public static long GetSmallest(long val1, long val2) {
-            return val1 < val2 ? val1 : val2;
-        }
+        public static long GetSmallest(long val1, long val2) { return val1 < val2 ? val1 : val2; }
 
-        public static int GetSmallest(int val1, int val2)
-        {
-            return val1 < val2 ? val1 : val2;
-        }
+        public static int GetSmallest(int val1, int val2) { return val1 < val2 ? val1 : val2; }
     }
 }

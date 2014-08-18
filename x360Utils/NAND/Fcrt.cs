@@ -4,7 +4,7 @@
     using System.Security.Cryptography;
     using x360Utils.Common;
 
-    internal class Fcrt {
+    public class Fcrt {
         public Fcrt(byte[] fcrt) { Data = fcrt; }
 
         public bool Encrypted { get; private set; }

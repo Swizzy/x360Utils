@@ -5,7 +5,7 @@
     using System.Text;
     using x360Utils.Common;
 
-    internal class Filesystem {
+    public class Filesystem {
         public readonly FsRootEntry FsRoot;
         public readonly MobileEntry[] MobileEntries;
         private readonly List<FsRootEntry> _fsRootEntries = new List<FsRootEntry>();

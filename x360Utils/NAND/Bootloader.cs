@@ -5,7 +5,7 @@
     using System.Text;
     using x360Utils.Common;
 
-    internal class Bootloader {
+    public class Bootloader {
         public enum BlTypes {
             Cb,
             Cd,
@@ -69,6 +69,16 @@
                     default:
                         throw new NotSupportedException(Encoding.ASCII.GetString(Header, 0, 2));
                 }
+            }
+        }
+
+        public bool IsZeroPaired {
+            get {
+                if(_data == null)
+                    throw new InvalidOperationException("You must dump and decrypt first!");
+                if(Encrypted)
+                    throw new InvalidOperationException("You must decrypt first!");
+                return BitOperations.DataIsZero(ref _data, 0x20, 0x20);
             }
         }
 
@@ -195,6 +205,17 @@
             Buffer.BlockCopy(Data, 0x20, buf, 0, buf.Length);
             Rc4.Compute(ref buf, CryptoKey);
             Buffer.BlockCopy(buf, 0, Data, 0x20, buf.Length);
+        }
+
+        public void ZeroPair() {
+            if(_data == null)
+                throw new InvalidOperationException("You must dump and decrypt first!");
+            if(Encrypted)
+                throw new InvalidOperationException("You must decrypt first!");
+            if(_data.Length <= 0x40)
+                throw new InvalidOperationException("The bootloader should be bigger then 0x40 bytes!");
+            var tmp = new byte[0x20];
+            Buffer.BlockCopy(tmp, 0, _data, 0x20, tmp.Length);
         }
     }
 }

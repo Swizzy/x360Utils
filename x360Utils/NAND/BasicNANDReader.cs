@@ -2,7 +2,7 @@
 {
     using System.IO;
 
-    class BasicNANDReader : NANDReader
+    public class BasicNANDReader : NANDReader
     {
         public BasicNANDReader(string file): base(file) {}
 

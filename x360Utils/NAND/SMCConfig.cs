@@ -5,7 +5,7 @@
     using System.Text.RegularExpressions;
     using x360Utils.Common;
 
-    internal class SmcConfig {
+    public class SmcConfig {
         #region SMCConfigFans enum
 
         public enum SmcConfigFans {
