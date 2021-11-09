@@ -1,4 +1,4 @@
-version: 1.3.{build}
+version: 1.0.{build}
 skip_non_tags: true
 configuration: Release
 assembly_info:
@@ -10,8 +10,14 @@ assembly_info:
 build:
   verbosity: minimal
 artifacts:
-- path: bin\Release\
-  name: Release
+- path: src\x360Utils\bin\Release\
+  name: Library
+- path: src\x360UtilsTestGUI\bin\Release\
+  name: TestGUI
+- path: src\SMCVersionCheck\bin\Release\
+  name: SMCVersionCheck
+- path: src\SMCScanner\bin\Release\
+  name: SMCScanner
 deploy:
 - provider: GitHub
   tag: v$(APPVEYOR_BUILD_VERSION)
