@@ -2,7 +2,7 @@
     using System;
     using System.Text;
     using System.Text.RegularExpressions;
-    using global::x360Utils.Common;
+    using x360Utils.Common;
 
     public class Keyvault {
         #region DateFormats enum

@@ -1,7 +1,7 @@
 ﻿namespace x360Utils.NAND {
     using System;
     using System.IO;
-    using global::x360Utils.Common;
+    using x360Utils.Common;
 
     public class Bootloader {
         public readonly uint Build;
@@ -47,7 +47,7 @@
             Size = GetBootloaderSize(ref header);
             Build = GetBootloaderVersion(ref header);
             if(readitin) {
-                reader.Lba = Offset / 0x4000;
+                reader.SeekToLbaEx(Offset / 0x4000);
                 if(Offset % 0x4000 > 0)
                     reader.Seek(Offset % 0x4000, SeekOrigin.Current);
                 Data = new byte[Size];
@@ -62,11 +62,11 @@
                     left -= (uint)toread;
                     dOffset += toread;
                     if(left > 0) // We want to seek to the next block!
-                        reader.Lba = (uint)((Offset / 0x4000) + 1 + i);
+                        reader.SeekToLbaEx((uint)((Offset / 0x4000) + 1 + i));
                 }
             }
             else {
-                reader.Lba = (Offset + Size) / 0x4000;
+                reader.SeekToLbaEx((Offset + Size) / 0x4000);
                 if((Offset + Size) % 0x4000 > 0)
                     reader.Seek((Offset + Size) % 0x4000, SeekOrigin.Current);
             }

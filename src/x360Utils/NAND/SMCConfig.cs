@@ -4,7 +4,7 @@
     using System.Globalization;
     using System.Text;
     using System.Text.RegularExpressions;
-    using global::x360Utils.Common;
+    using x360Utils.Common;
 
     public sealed class SmcConfig {
         #region SMCConfigFans enum

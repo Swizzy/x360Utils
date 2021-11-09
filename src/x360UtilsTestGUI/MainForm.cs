@@ -196,7 +196,7 @@
             try {
                 using(var reader = new NANDReader(e.Argument as string)) {
                     AddOutput("Grabbing BadBlock info from NAND: ");
-                    var blocks = reader.GetBadBlocks();
+                    var blocks = reader.FindBadBlocks();
                     foreach(var block in blocks)
                         AddOutput("{1}BadBlock @ 0x{0:X}", block, Environment.NewLine);
                 }
@@ -474,10 +474,11 @@
             var reader = new NANDReader(doWorkEventArgs.Argument as string);
             AddOutput("Testing FSRootScanner... {0}", Environment.NewLine);
             try {
+                reader.ScanForFsRootAndMobile();
                 AddOutput("FSRoot found:{0}", Environment.NewLine);
                 AddOutput("{0}{1}", reader.FsRoot, Environment.NewLine);
                 AddOutput("Mobiles found:{0}", Environment.NewLine);
-                foreach(var mobileEntry in reader.MobileEntries)
+                foreach(var mobileEntry in reader.MobileArray)
                     AddOutput("{0}{1}", mobileEntry, Environment.NewLine);
             }
             catch(Exception ex) {
@@ -502,6 +503,8 @@
         private void TestFsParserDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
             var reader = new NANDReader(doWorkEventArgs.Argument as string);
             try {
+                AddOutput("Scanning for RootFS... {0}", Environment.NewLine);
+                reader.ScanForFsRootAndMobile();
                 AddOutput("Parsing RootFS @ 0x{0:X}...{1}", reader.FsRoot.Offset, Environment.NewLine);
                 var fs = new NANDFileSystem();
                 var entries = fs.ParseFileSystem(ref reader);
@@ -531,6 +534,8 @@
         private void ExtractCurrentFsDoWork(object sender, DoWorkEventArgs doWorkEventArgs) {
             var reader = new NANDReader(doWorkEventArgs.Argument as string);
             try {
+                AddOutput("Scanning for RootFS... {0}", Environment.NewLine);
+                reader.ScanForFsRootAndMobile();
                 AddOutput("Parsing RootFS @ 0x{0:X}...{1}", reader.FsRoot.Offset, Environment.NewLine);
                 var fs = new NANDFileSystem();
                 var entries = fs.ParseFileSystem(ref reader);
@@ -667,11 +672,11 @@
                                                      AddOutput("Not implemented for this bootloader version...{0}", Environment.NewLine);
                                                  }
                                              }
-                                             if(bl.OutKey != null)
+                                             if (bl.OutKey != null)
                                                  AddOutput("OutKey: {0}{1}", StringUtils.ArrayToHex(bl.OutKey), Environment.NewLine);
-                                             if(bl.Key != null)
+                                             if (bl.Key != null)
                                                  AddOutput("Key: {0}{1}", StringUtils.ArrayToHex(bl.Key), Environment.NewLine);
-
+                                             
                                              lastkey = bl.OutKey;
                                          }
                                      }
