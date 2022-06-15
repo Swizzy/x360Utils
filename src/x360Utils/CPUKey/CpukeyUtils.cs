@@ -23,7 +23,7 @@
             }
             while(true);
         }
-                             
+
         private static void CalculateCPUKeyECD(ref byte[] key) {
             uint acc1 = 0, acc2 = 0;
             for(var cnt = 0; cnt < 0x80; cnt++, acc1 >>= 1) {
@@ -49,14 +49,14 @@
             var scratch = new byte[0x10];
             Buffer.BlockCopy(key, 0, scratch, 0, key.Length);
             CalculateCPUKeyECD(ref scratch);
-            if(!BitOperations.CompareByteArrays(ref key, ref key2))
+            if(!BitOperations.CompareByteArrays(ref key, ref scratch))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyECD);
         }
-        
+
         private static void VerifyCPUKeyHammingWeight(ref byte[] key) {
-            UInt64 cpukey0 = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0));
-            UInt64 cpukey1 = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8));
-            if(BitOperations.CountSetBits(cpukey0) + BitOperations.CountSetBits(cpukey1 & 0xFFFFFFFFFF030000) != 53)
+            UInt64 part0 = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0));
+            UInt64 part1 = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8));
+            if(BitOperations.CountSetBits(part0) + BitOperations.CountSetBits(part1 & 0xFFFFFFFFFF030000) != 53)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
         }
 
@@ -74,6 +74,16 @@
             VerifyCPUKeyHammingWeight(ref cpukey);
             VerifyCPUKeyECD(ref cpukey);
         }
+
+        public static void VerifyCpuKey(UInt64 part0, UInt64 part1) {
+            var key = new byte[0x10];
+            var tmp = BitConverter.GetBytes(BitOperations.Swap(part0));
+            Buffer.BlockCopy(tmp, 0, key, 0, tmp.Length);
+            tmp = BitConverter.GetBytes(BitOperations.Swap(part1));
+            Buffer.BlockCopy(tmp, 0, key, tmp.Length, tmp.Length);
+            VerifyCPUKeyHammingWeight(ref key);
+            VerifyCPUKeyECD(ref key);
+   }
 
         public bool ReadKeyfile(string file, out string cpukey) {
             cpukey = "";
