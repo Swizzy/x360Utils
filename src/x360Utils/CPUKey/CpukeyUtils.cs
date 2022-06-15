@@ -54,13 +54,16 @@
         }
 
         private static void VerifyCPUKeyHammingWeight(ref byte[] cpukey) {
-            UInt64 part0 = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0));
-            UInt64 part1 = BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8));
-            if(BitOperations.CountSetBits(part0) + BitOperations.CountSetBits(part1 & 0xFFFFFFFFFF030000) != 53)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
+			VerifyCPUKeyHammingWeight(BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0)), BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8)));
         }
 
-        public static void VerifyCpuKey(string cpukey) {
+		private static void VerifyCPUKeyHammingWeight(UInt64 part0, UInt64 part1)
+		{
+			if (BitOperations.CountSetBits(part0) + BitOperations.CountSetBits(part1 & 0xFFFFFFFFFF030000) != 53)
+				throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
+		}
+
+		public static void VerifyCpuKey(string cpukey) {
             cpukey = cpukey.Trim();
             var tmp = StringUtils.HexToArray(cpukey);
             VerifyCpuKey(ref tmp);
@@ -76,14 +79,14 @@
         }
 
         public static void VerifyCpuKey(UInt64 part0, UInt64 part1) {
+            VerifyCPUKeyHammingWeight(part0, part1);
             var key = new byte[0x10];
-            var tmp = BitConverter.GetBytes(part0);
+            var tmp = BitConverter.GetBytes(BitOperations.Swap(part0));
             Buffer.BlockCopy(tmp, 0, key, 0, tmp.Length);
-            tmp = BitConverter.GetBytes(part1);
+            tmp = BitConverter.GetBytes(BitOperations.Swap(part1));
             Buffer.BlockCopy(tmp, 0, key, tmp.Length, tmp.Length);
-            VerifyCPUKeyHammingWeight(ref key);
             VerifyCPUKeyECD(ref key);
-   }
+		}
 
         public bool ReadKeyfile(string file, out string cpukey) {
             cpukey = "";
