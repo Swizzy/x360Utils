@@ -14,14 +14,10 @@
                 _random.NextBytes(key);
                 if(BitOperations.DataIsZero(ref key, 0, key.Length))
                     UpdateRandom((int)(DateTime.Now.Ticks & 0xFFFF));
-                try {
-                    VerifyCPUKeyHammingWeight(ref key);
-                    CalculateCPUKeyECD(ref key);
-                    return key;
-                }
-                catch(X360UtilsException) {}
             }
-            while(true);
+            while(!TryVerifyCPUKeyHammingWeight(ref key));
+            CalculateCPUKeyECD(ref key);
+            return key;
         }
 
         private static void CalculateCPUKeyECD(ref byte[] key) {
