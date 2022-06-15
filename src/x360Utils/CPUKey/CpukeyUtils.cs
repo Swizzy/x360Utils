@@ -43,6 +43,8 @@
 
 		private static bool TryVerifyCPUKeyECD(ref byte[] cpukey)
 		{
+			if (cpukey is null || cpukey.Length != 0x10)
+				return false;
             var scratch = new byte[0x10];
             Buffer.BlockCopy(cpukey, 0, scratch, 0, cpukey.Length);
             CalculateCPUKeyECD(ref scratch);
@@ -50,12 +52,16 @@
 		}
 
 		private static void VerifyCPUKeyECD(ref byte[] cpukey) {
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
 			if (!TryVerifyCPUKeyECD(ref cpukey))
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyECD);
         }
 
 		private static bool TryVerifyCPUKeyHammingWeight(ref byte[] cpukey)
 		{
+			if (cpukey is null || cpukey.Length != 0x10)
+				return false;
 			return TryVerifyCPUKeyHammingWeight(BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0)), BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8)));
 		}
 
@@ -65,6 +71,8 @@
 		}
 
 		private static void VerifyCPUKeyHammingWeight(ref byte[] cpukey) {
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
 			if (!TryVerifyCPUKeyHammingWeight(BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0)), BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8))))
 				throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
 		}
@@ -81,6 +89,13 @@
 		/// <returns>true if the CPUKey is valid, otherwise false</returns>
 		public static bool TryVerifyCPUKey(string cpukey)
 		{
+			if (cpukey is null)
+				return false;
+
+			cpukey = cpukey.Trim();
+			if (String.IsNullOrEmpty(cpukey))
+				return false;
+
 			var tmp = StringUtils.HexToArray(cpukey.Trim());
 			return TryVerifyCPUKey(ref tmp);
 		}
@@ -91,7 +106,7 @@
 		/// <returns>true if the CPUKey is valid, otherwise false</returns>
 		public static bool TryVerifyCPUKey(ref byte[] cpukey)
 		{
-			if (cpukey.Length != 0x10)
+			if (cpukey is null || cpukey.Length != 0x10)
 				return false;
 			return (TryVerifyCPUKeyHammingWeight(ref cpukey) && TryVerifyCPUKeyECD(ref cpukey));
 		}
@@ -120,8 +135,14 @@
 		/// <param name="cpukey"></param>
 		/// <exception cref="X360UtilsException">Throws if CPUKey is wrong length (0x20 chars), or invalid hamming/ECD</exception>
 		public static void VerifyCpuKey(string cpukey) {
-            cpukey = cpukey.Trim();
-            var tmp = StringUtils.HexToArray(cpukey);
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
+
+			cpukey = cpukey.Trim();
+			if (String.IsNullOrEmpty(cpukey))
+				throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
+
+			var tmp = StringUtils.HexToArray(cpukey);
             VerifyCpuKey(ref tmp);
         }
 
@@ -131,7 +152,9 @@
 		/// </summary>
 		/// <exception cref="X360UtilsException">Throws if CPUKey is wrong length (0x10 bytes), or invalid hamming/ECD</exception>
 		public static void VerifyCpuKey(ref byte[] cpukey) {
-            if(cpukey.Length < 0x10)
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
+			if (cpukey.Length < 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
             if(cpukey.Length > 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooLongKey);
