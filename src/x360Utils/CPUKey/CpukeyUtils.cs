@@ -14,13 +14,10 @@
                 _random.NextBytes(key);
                 if(BitOperations.DataIsZero(ref key, 0, key.Length))
                     UpdateRandom((int)(DateTime.Now.Ticks & 0xFFFF));
-                try {
-                    VerifyCpuKey(ref key);
-                    return key;
-                }
-                catch(X360UtilsException) {}
             }
-            while(true);
+            while(!TryVerifyCPUKeyHammingWeight(ref key));
+            CalculateCPUKeyECD(ref key);
+            return key;
         }
 
         private static void CalculateCPUKeyECD(ref byte[] key) {
@@ -44,35 +41,141 @@
             }
         }
 
-        public static void VerifyCpuKey(string cpukey) {
-            cpukey = cpukey.Trim();
-            var tmp = StringUtils.HexToArray(cpukey);
+		private static bool TryVerifyCPUKeyECD(ref byte[] cpukey)
+		{
+			if (cpukey is null || cpukey.Length != 0x10)
+				return false;
+            var scratch = new byte[0x10];
+            Buffer.BlockCopy(cpukey, 0, scratch, 0, cpukey.Length);
+            CalculateCPUKeyECD(ref scratch);
+			return !BitOperations.CompareByteArrays(ref cpukey, ref scratch);
+		}
+
+		private static void VerifyCPUKeyECD(ref byte[] cpukey) {
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
+			if (!TryVerifyCPUKeyECD(ref cpukey))
+                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyECD);
+        }
+
+		private static bool TryVerifyCPUKeyHammingWeight(ref byte[] cpukey)
+		{
+			if (cpukey is null || cpukey.Length != 0x10)
+				return false;
+			return TryVerifyCPUKeyHammingWeight(BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0)), BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8)));
+		}
+
+		private static bool TryVerifyCPUKeyHammingWeight(UInt64 part0, UInt64 part1)
+		{
+			return BitOperations.CountSetBits(part0) + BitOperations.CountSetBits(part1 & 0xFFFFFFFFFF030000) == 53;
+		}
+
+		private static void VerifyCPUKeyHammingWeight(ref byte[] cpukey) {
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
+			if (!TryVerifyCPUKeyHammingWeight(BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0)), BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8))))
+				throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
+		}
+
+		private static void VerifyCPUKeyHammingWeight(UInt64 part0, UInt64 part1)
+		{
+			if (!TryVerifyCPUKeyHammingWeight(part0, part1))
+				throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
+		}
+
+		/// <summary>
+		/// Verify a CPUKey, without throwing exceptions.
+		/// </summary>
+		/// <returns>true if the CPUKey is valid, otherwise false</returns>
+		public static bool TryVerifyCPUKey(string cpukey)
+		{
+			if (cpukey is null)
+				return false;
+
+			cpukey = cpukey.Trim();
+			if (String.IsNullOrEmpty(cpukey))
+				return false;
+
+			var tmp = StringUtils.HexToArray(cpukey.Trim());
+			return TryVerifyCPUKey(ref tmp);
+		}
+
+		/// <summary>
+		/// Verify a CPUKey, without throwing exceptions.
+		/// </summary>
+		/// <returns>true if the CPUKey is valid, otherwise false</returns>
+		public static bool TryVerifyCPUKey(ref byte[] cpukey)
+		{
+			if (cpukey is null || cpukey.Length != 0x10)
+				return false;
+			return (TryVerifyCPUKeyHammingWeight(ref cpukey) && TryVerifyCPUKeyECD(ref cpukey));
+		}
+
+		/// <summary>
+		/// Verify a CPUKey, without throwing exceptions.
+		/// </summary>
+		/// <returns>true if the CPUKey is valid, otherwise false</returns>
+		public static bool TryVerifyCPUKey(UInt64 part0, UInt64 part1)
+		{
+			if (!TryVerifyCPUKeyHammingWeight(part0, part1))
+				return false;
+
+			var key = new byte[0x10];
+			var tmp = BitConverter.GetBytes(BitOperations.Swap(part0));
+			Buffer.BlockCopy(tmp, 0, key, 0, tmp.Length);
+			tmp = BitConverter.GetBytes(BitOperations.Swap(part1));
+			Buffer.BlockCopy(tmp, 0, key, tmp.Length, tmp.Length);
+			return TryVerifyCPUKeyECD(ref key);
+		}
+
+		/// <summary>
+		/// Verify a CPUKey. Throws an <see cref="X360UtilsException"/> if verification fails,
+		/// which can be examined to determine the specific cause of failure.
+		/// </summary>
+		/// <param name="cpukey"></param>
+		/// <exception cref="X360UtilsException">Throws if CPUKey is wrong length (0x20 chars), or invalid hamming/ECD</exception>
+		public static void VerifyCpuKey(string cpukey) {
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
+
+			cpukey = cpukey.Trim();
+			if (String.IsNullOrEmpty(cpukey))
+				throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
+
+			var tmp = StringUtils.HexToArray(cpukey);
             VerifyCpuKey(ref tmp);
         }
 
-        public static void VerifyCpuKey(ref byte[] cpukey) {
-            if(cpukey.Length < 0x10)
+		/// <summary>
+		/// Verify a CPUKey. Throws an <see cref="X360UtilsException"/> if verification fails,
+		/// which can be examined to determine the specific cause of failure.
+		/// </summary>
+		/// <exception cref="X360UtilsException">Throws if CPUKey is wrong length (0x10 bytes), or invalid hamming/ECD</exception>
+		public static void VerifyCpuKey(ref byte[] cpukey) {
+			if (cpukey is null)
+				throw new ArgumentNullException(nameof(cpukey));
+			if (cpukey.Length < 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooShortKey);
             if(cpukey.Length > 0x10)
                 throw new X360UtilsException(X360UtilsException.X360UtilsErrors.TooLongKey);
-            VerifyCpuKey(BitOperations.Swap(BitConverter.ToUInt64(cpukey, 0)), BitOperations.Swap(BitConverter.ToUInt64(cpukey, 8)));
+            VerifyCPUKeyHammingWeight(ref cpukey);
+            VerifyCPUKeyECD(ref cpukey);
         }
 
-        public static void VerifyCpuKey(UInt64 cpukey0, UInt64 cpukey1) {
-            var hamming = BitOperations.CountSetBits(cpukey0) + BitOperations.CountSetBits(cpukey1 & 0xFFFFFFFFFF030000);
-            if(hamming != 53)
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyHamming);
-            var tmp = BitConverter.GetBytes(BitOperations.Swap(cpukey0));
+		/// <summary>
+		/// Verify a CPUKey. Throws an <see cref="X360UtilsException"/> if verification fails,
+		/// which can be examined to determine the specific cause of failure.
+		/// </summary>
+		/// <exception cref="X360UtilsException">Throws if CPUKey is wrong length (0x10 bytes), or invalid hamming/ECD</exception>
+		public static void VerifyCpuKey(UInt64 part0, UInt64 part1) {
+            VerifyCPUKeyHammingWeight(part0, part1);
             var key = new byte[0x10];
+            var tmp = BitConverter.GetBytes(BitOperations.Swap(part0));
             Buffer.BlockCopy(tmp, 0, key, 0, tmp.Length);
-            tmp = BitConverter.GetBytes(BitOperations.Swap(cpukey1));
+            tmp = BitConverter.GetBytes(BitOperations.Swap(part1));
             Buffer.BlockCopy(tmp, 0, key, tmp.Length, tmp.Length);
-            var key2 = new byte[key.Length];
-            Buffer.BlockCopy(key, 0, key2, 0, key.Length);
-            CalculateCPUKeyECD(ref key2);
-            if(!BitOperations.CompareByteArrays(ref key, ref key2))
-                throw new X360UtilsException(X360UtilsException.X360UtilsErrors.InvalidKeyECD);
-        }
+            VerifyCPUKeyECD(ref key);
+		}
 
         public bool ReadKeyfile(string file, out string cpukey) {
             cpukey = "";
